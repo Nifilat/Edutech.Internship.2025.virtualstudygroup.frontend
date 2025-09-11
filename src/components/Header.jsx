@@ -12,7 +12,8 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 
 const Header = ({ pageTitle }) => {
   return (
-    <header className="bg-card shadow-sm border-b border-border px-6 py-4">
+    <header className="bg-card shadow-sm border-b border-border px-6 py-4 h-16 ">
+      
       <div className="flex items-center justify-between">
         <div className="flex-1">
           {pageTitle && (

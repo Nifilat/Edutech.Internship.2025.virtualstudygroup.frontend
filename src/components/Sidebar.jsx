@@ -1,6 +1,6 @@
-// src/components/Sidebar.jsx
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { PiStudentLight } from "react-icons/pi";
 import {
   Home, Users, BookOpen, Calendar, FileText,
   ChevronDown, UserPlus, MessageCircle, Plus
@@ -16,13 +16,13 @@ const Sidebar = ({ activeItem }) => {
     {
       id: 'study-group',
       label: 'Study group',
-      icon: Users,
+      icon: PiStudentLight,
       expandable: true,
       expanded: studyGroupExpanded,
       subItems: [
-        { id: 'create-group', label: 'Create Group', icon: Plus, path: '/create-group' },
-        { id: 'join-group', label: 'Join Group', icon: UserPlus, path: '/join-group' },
-        { id: 'chatroom', label: 'Chatroom', icon: MessageCircle, path: '/chatroom' },
+        { id: 'create-group', label: 'Create Group', path: '/create-group' },
+        { id: 'join-group', label: 'Join Group', path: '/join-group' },
+        { id: 'chatroom', label: 'Chatroom', path: '/chatroom' },
       ],
     },
     { id: 'my-course', label: 'My Course', icon: BookOpen, path: '/my-course' },
@@ -41,12 +41,13 @@ const Sidebar = ({ activeItem }) => {
   return (
     <div className="fixed left-0 top-0 h-full w-64 bg-sidebar shadow-sm border-r border-sidebar-border">
       {/* Logo */}
-      <div className="flex items-center px-6 py-4 border-b border-sidebar-border">
+      <div className="flex items-center px-6 h-16 border-b border-sidebar-border">
         <div className="flex items-center gap-0.5">
-            <img src="src/assets/logo.svg" alt="Logo" />
+          <img src="src/assets/logo.svg" alt="Logo" className="h-8 w-auto" />
           <span className="text-xl font-semibold text-sidebar-foreground">edifyLMS</span>
         </div>
       </div>
+
 
       {/* Navigation */}
       <nav className="mt-6">
@@ -59,8 +60,8 @@ const Sidebar = ({ activeItem }) => {
                 activeItem === item.id && item.id === 'dashboard'
                   ? 'bg-orange-normal text-white border-r-4 border-orange-dark'
                   : activeItem === item.id && item.id !== 'dashboard'
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground hover:text-sidebar-accent-foreground'
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground hover:text-sidebar-accent-foreground'
               )}
             >
               <div className="flex items-center">
@@ -92,9 +93,9 @@ const Sidebar = ({ activeItem }) => {
                       )
                     }
                   >
-                    <subItem.icon className="w-4 h-4 mr-3 ml-4" />
-                    <span className="font-medium text-sm">{subItem.label}</span>
+                    <span className="font-medium text-sm ml-7">{subItem.label}</span>
                   </NavLink>
+
                 ))}
               </div>
             )}
