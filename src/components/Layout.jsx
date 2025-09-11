@@ -14,7 +14,7 @@ const Layout = ({ children, pageTitle, activeNavItem, onNavItemClick }) => {
       <div className="ml-64">
         <Header pageTitle={pageTitle} />
         
-        <main className="p-6">
+        <main className="p-8">
           {children}
         </main>
       </div>
