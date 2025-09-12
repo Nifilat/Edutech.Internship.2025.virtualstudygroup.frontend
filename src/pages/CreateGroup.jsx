@@ -17,7 +17,7 @@ import { addStudyGroup } from "../data/studyGroup";
 import ParticipantsList from "@/components/ParticipantsList";
 import { toast } from "sonner";
 
-const CreateGroup = () => {
+const CreateGroup = ({ onGroupCreated }) => { // Added prop
   const [groupName, setGroupName] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
@@ -33,25 +33,46 @@ const CreateGroup = () => {
   ];
 
   const handleCreateGroup = () => {
-    const newGroup = {
-      groupName,
-      selectedCourse,
-      groupDescription,
-      participants,
-    };
+    try {
+      // Debug: Log before creating group
+      console.log('Creating group with data:', {
+        groupName,
+        selectedCourse,
+        groupDescription,
+        participants,
+      });
 
-    // Add the group to mock data
-    const createdGroup = addStudyGroup(newGroup);
-    console.log('Group created:', createdGroup);
+      const newGroup = {
+        groupName,
+        selectedCourse,
+        groupDescription,
+        participants,
+      };
 
-    // Clear form
-    handleCancel();
+      // Add the group to mock data
+      const createdGroup = addStudyGroup(newGroup);
+      console.log('Group created:', createdGroup);
 
-    // Notify parent component if callback provided
-    if (onGroupCreated) {
-      onGroupCreated(createdGroup);
+      // Debug: Log before showing toast
+      console.log('About to show toast...');
+      
+      // Show toast BEFORE clearing form (in case form clearing affects anything)
+      toast.success('Group created successfully!');
+      
+      // Debug: Log after showing toast
+      console.log('Toast should have been shown');
+
+      // Clear form
+      handleCancel();
+
+      // Notify parent component if callback provided
+      if (onGroupCreated) {
+        onGroupCreated(createdGroup);
+      }
+    } catch (error) {
+      console.error('Error creating group:', error);
+      toast.error('Failed to create group. Please try again.');
     }
-    toast.success('Group created successfully!');
   };
 
   const handleCancel = () => {
@@ -190,6 +211,7 @@ const CreateGroup = () => {
           />
         </DialogContent>
       </Dialog>
+
     </div>
   );
 };
