@@ -147,7 +147,7 @@ const CreateGroup = () => {
 
       {/* Add Participant Modal */}
       <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent className="max-w-md p-0 gap-0">
+        <DialogContent className="max-w-md p-0 gap-0" showCloseButton={false}>
           <ParticipantsList
             participants={participants}
             availableParticipants={eligibleParticipants}
