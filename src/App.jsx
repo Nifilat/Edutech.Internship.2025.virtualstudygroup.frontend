@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
 import CreateGroup from '@/pages/CreateGroup';
+import JoinGroup from '@/pages/JoinGroup';
 import Layout from '@/components/Layout';
 
 function App() {
@@ -36,9 +37,7 @@ function App() {
           path="/join-group"
           element={
             <Layout pageTitle="Join Group" activeNavItem="join-group">
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">Join Group - Coming Soon</h1>
-              </div>
+              <JoinGroup />
             </Layout>
           }
         />
