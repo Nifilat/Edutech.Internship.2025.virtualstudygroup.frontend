@@ -64,10 +64,44 @@ export const mockParticipants = [
   },
   {
     id: "10",
-    name: "James Wilson ",
+    name: "James Wilson",
     username: "james_w",
     avatarUrl: "https://i.pravatar.cc/150?img=10",
     course: "administrative-law",
+  },
+  {
+    id: "11",
+    name: "George Uwah",
+    username: "Georgie_wayne",
+    avatarUrl: "https://i.pravatar.cc/150?img=11",
+    course: "criminal-law",
+  },
+  {
+    id: "12",
+    name: "Gilbert Jane",
+    username: "Gil73920",
+    avatarUrl: "https://i.pravatar.cc/150?img=12",
+    course: "criminal-law",
+  },
+  {
+    id: "13",
+    name: "Garry Jones",
+    username: "Gar-jon",
+    avatarUrl: "https://i.pravatar.cc/150?img=13",
+    course: "criminal-law",
+  },
+  {
+    id: "14",
+    name: "Gbolahan Daniel",
+    username: "Gbodan",
+    avatarUrl: "https://i.pravatar.cc/150?img=14",
+    course: "criminal-law",
+  },
+  {
+    id: "15",
+    name: "Gbema Anna",
+    username: "gbema_a",
+    avatarUrl: "https://i.pravatar.cc/150?img=15",
+    course: "criminal-law",
   }
-
 ];
