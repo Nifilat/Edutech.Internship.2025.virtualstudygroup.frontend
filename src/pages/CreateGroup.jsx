@@ -13,7 +13,9 @@ import {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AiOutlinePlus } from "react-icons/ai";
 import { mockParticipants } from "../data/participants";
+import { addStudyGroup } from "../data/studyGroup";
 import ParticipantsList from "@/components/ParticipantsList";
+import { toast } from "sonner";
 
 const CreateGroup = () => {
   const [groupName, setGroupName] = useState("");
@@ -24,19 +26,32 @@ const CreateGroup = () => {
 
   const courses = [
     "Criminal Law",
-    "Constitutional Law", 
+    "Constitutional Law",
     "Contract Law",
     "Tort Law",
     "Administrative Law",
   ];
 
   const handleCreateGroup = () => {
-    console.log({
+    const newGroup = {
       groupName,
       selectedCourse,
       groupDescription,
       participants,
-    });
+    };
+
+    // Add the group to mock data
+    const createdGroup = addStudyGroup(newGroup);
+    console.log('Group created:', createdGroup);
+
+    // Clear form
+    handleCancel();
+
+    // Notify parent component if callback provided
+    if (onGroupCreated) {
+      onGroupCreated(createdGroup);
+    }
+    toast.success('Group created successfully!');
   };
 
   const handleCancel = () => {
@@ -125,6 +140,25 @@ const CreateGroup = () => {
             />
           </div>
         </div>
+
+        {/* Selected Participants Display */}
+        {participants.length > 0 && (
+          <div className="mt-6">
+            <Label className="text-sm font-medium mb-3 block">
+              Selected Participants ({participants.length})
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {participants.map((participant) => (
+                <div
+                  key={participant.id}
+                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                >
+                  {participant.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex items-center justify-end space-x-4 pt-6">
