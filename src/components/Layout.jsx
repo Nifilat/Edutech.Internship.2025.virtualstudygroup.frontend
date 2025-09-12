@@ -1,7 +1,7 @@
-// src/components/Layout.jsx
 import React from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
+import { Toaster } from '@/components/ui/sonner';
 
 const Layout = ({ children, pageTitle, activeNavItem, onNavItemClick }) => {
   return (
@@ -17,6 +17,7 @@ const Layout = ({ children, pageTitle, activeNavItem, onNavItemClick }) => {
         <main className="p-8">
           {children}
         </main>
+        <Toaster />
       </div>
     </div>
   );
