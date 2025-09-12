@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockStudyGroups } from '../data/studyGroup';
+import CreateGroup from './CreateGroup';
 
 const JoinGroup = ({ onCreateGroupClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -133,9 +134,7 @@ const JoinGroup = ({ onCreateGroupClick }) => {
 
         {/* Create Group Content (placeholder) */}
         <TabsContent value="create-group" className="space-y-6 mt-6">
-          <div className="text-center py-12">
-            <p className="text-gray-500">Create Group content will be handled by parent component</p>
-          </div>
+          <CreateGroup />
         </TabsContent>
       </Tabs>
     </div>
