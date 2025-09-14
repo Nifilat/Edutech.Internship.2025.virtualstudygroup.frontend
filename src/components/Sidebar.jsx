@@ -56,7 +56,7 @@ const Sidebar = ({ activeItem }) => {
             <button
               onClick={() => handleItemClick(item)}
               className={cn(
-                "w-full flex items-center justify-between px-6 py-3 text-left hover:bg-sidebar-accent transition-colors",
+                "w-full flex items-center justify-between rounded-sm px-6 py-3 text-left hover:bg-sidebar-accent transition-colors",
                 activeItem === item.id && item.id === 'dashboard'
                   ? 'bg-orange-normal text-white border-r-4 border-orange-dark'
                   : activeItem === item.id && item.id !== 'dashboard'
