@@ -26,11 +26,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-4 gap-4">
         {stats.map((s, i) => (
           <div key={i} className="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between">
-            <div>
-              <span className="text-2xl font-bold text-gray-800">{s.value}</span>
-              <p className="text-sm text-gray-500">{s.label}</p>
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-black-normal">{s.label}</p>
+              <span className="text-xl font-medium text-black-normal">{s.value}</span>
             </div>
-            <div className="w-10 h-1 flex items-center justify-center">
+            <div className="flex items-center justify-center rounded-full border border-orange-light bg-white-normal p-3.5">
               {i === 0 && <Course size={20} className="text-orange-500" />}
               {i === 1 && <UserGroup size={20} className="text-orange-500" />}
               {i === 2 && <UserMultiple size={20} className="text-orange-500" />}
