@@ -155,10 +155,10 @@ function ParticipantsList({
         </div>
 
         {/* Add Button */}
-        <div className="pt-4">
+        <div className="pt-4 grid place-items-center">
           <Button
             onClick={handleAdd}
-            className="w-full bg-orange-normal hover:bg-orange-normal-hover text-white-normal h-10 font-medium rounded-lg"
+            className="w-2/5 bg-orange-normal hover:bg-orange-normal-hover text-white-normal h-10 font-medium rounded-lg"
           >
             Add
           </Button>
