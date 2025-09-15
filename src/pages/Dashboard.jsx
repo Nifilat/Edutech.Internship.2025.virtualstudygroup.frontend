@@ -1,5 +1,6 @@
 import React from "react";
-import { BookOpen, Users, Folder, Calendar } from "lucide-react";
+import { Course, UserGroup, UserMultiple, Students } from "../components/icons";
+// import { BookOpen, Users, Folder, Calendar } from "lucide-react";
 import CourseProgressTable from "@/components/ui/CourseProgressTable";
 
 const stats = [
@@ -20,20 +21,20 @@ const courses = [
 export default function Dashboard() {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-orange-500">Welcome Andrew!</h2>
+      <h2 className="text-xl font-semibold text-orange-normal">Welcome Andrew!</h2>
 
       <div className="grid grid-cols-4 gap-4">
         {stats.map((s, i) => (
           <div key={i} className="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between">
-            <div>
-              <span className="text-2xl font-bold text-gray-800">{s.value}</span>
-              <p className="text-sm text-gray-500">{s.label}</p>
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-black-normal">{s.label}</p>
+              <span className="text-xl font-medium text-black-normal">{s.value}</span>
             </div>
-            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-              {i === 0 && <BookOpen size={20} className="text-orange-500" />}
-              {i === 1 && <Users size={20} className="text-orange-500" />}
-              {i === 2 && <Folder size={20} className="text-orange-500" />}
-              {i === 3 && <Calendar size={20} className="text-orange-500" />}
+            <div className="flex items-center justify-center rounded-full border border-orange-light bg-white-normal p-3.5">
+              {i === 0 && <Course size={20} className="text-orange-500" />}
+              {i === 1 && <UserGroup size={20} className="text-orange-500" />}
+              {i === 2 && <UserMultiple size={20} className="text-orange-500" />}
+              {i === 3 && <Students size={20} className="text-orange-500" />}
             </div>
           </div>
         ))}

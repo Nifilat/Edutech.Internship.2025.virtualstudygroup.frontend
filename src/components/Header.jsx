@@ -37,7 +37,7 @@ const Header = ({ pageTitle }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-3 px-3">
                 <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-orange-500 text-white">
+                  <AvatarFallback className="bg-orange-normal text-white">
                     AD
                   </AvatarFallback>
                 </Avatar>

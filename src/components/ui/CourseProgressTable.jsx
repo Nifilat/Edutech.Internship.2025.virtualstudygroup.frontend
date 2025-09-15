@@ -22,14 +22,17 @@ export default function CourseProgressTable({ courses }) {
         <tbody>
           {courses.map((c, i) => (
             <tr key={i} className="bg-white rounded-lg shadow-sm">
-              <td className="px-6 py-4 rounded-l-lg">{c.name}</td>
+              <td className="px-6 py-4 rounded-l-lg flex items-center gap-2">
+                {c.icon}
+                {c.name}
+              </td>
               <td className="px-6 py-4">{c.assignment}</td>
               <td className="px-6 py-4">{c.quiz}</td>
               <td className="px-6 py-4">{c.forum}</td>
               <td className="px-6 py-4 rounded-r-lg">
-                <div className="w-full bg-gray-200 h-2 rounded-full">
+                <div className="w-full bg-orange-light h-2 rounded-full">
                   <div
-                    className="bg-orange-500 h-2 rounded-full"
+                    className="bg-orange-normal h-2 rounded-full"
                     style={{ width: `${c.progress}%` }}
                   ></div>
                 </div>
