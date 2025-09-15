@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,8 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/hooks/useAuth';
 
 const Login = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -15,6 +17,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
 
+  // Get the intended destination or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard';
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -24,7 +28,12 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    login(formData);
+    login(formData, {
+      onSuccess: () => {
+        // Navigate to intended destination after successful login
+        navigate(from, { replace: true });
+      }
+    });
   };
 
   return (

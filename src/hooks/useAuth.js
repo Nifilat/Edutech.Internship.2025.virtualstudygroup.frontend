@@ -22,13 +22,18 @@ export const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: authAPI.login,
     onSuccess: (data) => {
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        queryClient.setQueryData(['user'], data.user);
-        toast.success('Login successful!');
-        navigate('/dashboard');
-      }
+      // Store the token and user data
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      queryClient.setQueryData(['user'], data.user);
+      
+      // Show success message
+      toast.success('Login successful!');
+      
+      // Navigate to dashboard
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 100);
     },
     onError: (error) => {
       const message = error.response?.data?.message || 'Login failed';
