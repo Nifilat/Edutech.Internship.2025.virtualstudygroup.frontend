@@ -18,9 +18,9 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
+  --background: #FFFFFF;
+  --foreground: #1E1E1E;
+  --card: #FCFCFC;
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
@@ -61,6 +61,7 @@
   --orange-darker: #4A1E14;
 
   /* Black Color Palette */
+  --black-light-active: #B9B9B9;
   --black-normal: #1E1E1E;
   --black-normal-hover: #1B1B1B;
   --black-normal-active: #181818;
@@ -122,6 +123,7 @@
   --color-black-normal: var(--black-normal);
   --color-black-normal-hover: var(--black-normal-hover);
   --color-black-normal-active: var(--black-normal-active);
+  --color-black-light-active: var(--black-light-active);
 
   --color-white-normal: var(--white-normal);
   --color-white-dark-active: var(--white-dark-active);

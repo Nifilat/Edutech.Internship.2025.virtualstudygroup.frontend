@@ -30,9 +30,9 @@ export default function CourseProgressTable({ courses }) {
               <td className="px-6 py-4">{c.quiz}</td>
               <td className="px-6 py-4">{c.forum}</td>
               <td className="px-6 py-4 rounded-r-lg">
-                <div className="w-full bg-gray-200 h-2 rounded-full">
+                <div className="w-full bg-orange-light h-2 rounded-full">
                   <div
-                    className="bg-orange-500 h-2 rounded-full"
+                    className="bg-orange-normal h-2 rounded-full"
                     style={{ width: `${c.progress}%` }}
                   ></div>
                 </div>
