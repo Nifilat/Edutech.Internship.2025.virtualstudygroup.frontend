@@ -11,11 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { AiOutlinePlus } from "react-icons/ai";
 import { mockParticipants } from "../data/participants";
 import { addStudyGroup } from "../data/studyGroup";
 import ParticipantsList from "@/components/ParticipantsList";
 import { toast } from "sonner";
+import { Add } from "../components/icons";
 
 const CreateGroup = ({ onGroupCreated }) => { // Added prop
   const [groupName, setGroupName] = useState("");
@@ -99,7 +99,7 @@ const CreateGroup = ({ onGroupCreated }) => { // Added prop
           className="bg-orange-normal hover:bg-orange-dark text-white"
           onClick={() => setOpenModal(true)}
         >
-          <AiOutlinePlus className="w-5 h-5" />
+          <Add className="w-5 h-5" />
           Add Participant
         </Button>
       </div>
@@ -130,7 +130,7 @@ const CreateGroup = ({ onGroupCreated }) => { // Added prop
                 Select Course <span className="text-red-500">*</span>
               </Label>
               <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                <SelectTrigger className="w-full bg-[#FCFCFC] border border-[#E9E9E9]">
+                <SelectTrigger className="w-full bg-white-normal border border-[#E9E9E9]">
                   <SelectValue placeholder="Criminal Law" />
                 </SelectTrigger>
                 <SelectContent>
