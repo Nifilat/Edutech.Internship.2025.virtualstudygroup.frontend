@@ -9,8 +9,16 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback } from './ui/avatar';
+import { useAuth } from '@/hooks/useAuth';
 
 const Header = ({ pageTitle }) => {
+  const { logout, getUser } = useAuth();
+  const user = getUser();
+
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <header className="bg-card shadow-sm border-b border-border px-6 py-4 h-16 ">
       
@@ -38,11 +46,13 @@ const Header = ({ pageTitle }) => {
               <Button variant="ghost" className="flex items-center space-x-3 px-3">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className="bg-orange-normal text-white">
-                    AD
+                    {user ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}` : 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex items-center space-x-1">
-                  <span className="text-sm font-medium">Andrew Drey</span>
+                  <span className="text-sm font-medium">
+                    {user ? `${user.first_name} ${user.last_name}` : 'User'}
+                  </span>
                   <ChevronDown className="w-4 h-4" />
                 </div>
               </Button>
@@ -51,7 +61,7 @@ const Header = ({ pageTitle }) => {
               <DropdownMenuItem>Profile</DropdownMenuItem>
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem>Help</DropdownMenuItem>
-              <DropdownMenuItem>Sign out</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
