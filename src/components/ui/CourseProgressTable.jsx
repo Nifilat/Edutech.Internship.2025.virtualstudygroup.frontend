@@ -22,7 +22,10 @@ export default function CourseProgressTable({ courses }) {
         <tbody>
           {courses.map((c, i) => (
             <tr key={i} className="bg-white rounded-lg shadow-sm">
-              <td className="px-6 py-4 rounded-l-lg">{c.name}</td>
+              <td className="px-6 py-4 rounded-l-lg flex items-center gap-2">
+                {c.icon}
+                {c.name}
+              </td>
               <td className="px-6 py-4">{c.assignment}</td>
               <td className="px-6 py-4">{c.quiz}</td>
               <td className="px-6 py-4">{c.forum}</td>

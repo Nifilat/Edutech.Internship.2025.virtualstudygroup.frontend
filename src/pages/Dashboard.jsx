@@ -1,6 +1,10 @@
 import React from "react";
 import { BookOpen, Users, Folder, Calendar } from "lucide-react";
 import CourseProgressTable from "@/components/ui/CourseProgressTable";
+import CourseIcon from "@/components/icons/Course";
+import StudentsIcon from "@/components/icons/Students";
+import UserGroupIcon from "@/components/icons/UserGroup";
+import UserMultipleIcon from "@/components/icons/UserMultiple";
 
 const stats = [
   { label: "Courses", value: 4 },
@@ -10,10 +14,10 @@ const stats = [
 ];
 
 const courses = [
-    { name: "Cr 001- Criminal Law", assignment: "0 out of 3", quiz: "0 out of 3", forum: "0 out of 3", progress: 20 },
-    { name: "Cr 002- Civil Law", assignment: "0 out of 3", quiz: "0 out of 3", forum: "0 out of 3", progress: 40 },
-    { name: "Cr 002- Civil Law", assignment: "0 out of 3", quiz: "0 out of 3", forum: "0 out of 3", progress: 60 },
-    { name: "Cr 002- crr Law", assignment: "0 out of 3", quiz: "0 out of 3", forum: "0 out of 3", progress: 80 },
+  { name: "Cr 001- Criminal Law", icon: <CourseIcon />, assignment: "0 out of 3", quiz: "0 out of 3", forum: "0 out of 3", progress: 20 },
+  { name: "Cr 002- Civil Law", icon: <StudentsIcon />, assignment: "0 out of 3", quiz: "0 out of 3", forum: "0 out of 3", progress: 40 },
+  { name: "Cr 002- Civil Law", icon: <UserGroupIcon />, assignment: "0 out of 3", quiz: "0 out of 3", forum: "0 out of 3", progress: 60 },
+  { name: "Cr 002- crr Law", icon: <UserMultipleIcon />, assignment: "0 out of 3", quiz: "0 out of 3", forum: "0 out of 3", progress: 80 },
 
 ];
 
@@ -30,16 +34,16 @@ export default function Dashboard() {
               <p className="text-sm text-gray-500">{s.label}</p>
             </div>
             <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-              {i === 0 && <BookOpen size={20} className="text-orange-500" />}
-              {i === 1 && <Users size={20} className="text-orange-500" />}
-              {i === 2 && <Folder size={20} className="text-orange-500" />}
-              {i === 3 && <Calendar size={20} className="text-orange-500" />}
+              {i === 0 && <CourseIcon width={20} height={20} style={{ color: "#f97316" }} />}
+              {i === 1 && <StudentsIcon width={20} height={20} style={{ color: "#f97316" }} />}
+              {i === 2 && <UserGroupIcon width={20} height={20} style={{ color: "#f97316" }} />}
+              {i === 3 && <UserMultipleIcon width={20} height={20} style={{ color: "#f97316" }} />}
             </div>
           </div>
         ))}
       </div>
 
-      <CourseProgressTable courses={courses} />
+  <CourseProgressTable courses={courses} />
     </div>
   );
 }

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { PiStudentLight } from "react-icons/pi";
-import {
-  Home, Users, BookOpen, Calendar, FileText,
-  ChevronDown, UserPlus, MessageCircle, Plus
+import { DashboardSquare, Students, Calendar, Book, Course } from './icons';
+import { 
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -12,11 +11,11 @@ const Sidebar = ({ activeItem }) => {
   const navigate = useNavigate();
 
   const sidebarItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
+    { id: 'dashboard', label: 'Dashboard', icon: <DashboardSquare />, path: '/dashboard' },
     {
       id: 'study-group',
       label: 'Study group',
-      icon: PiStudentLight,
+      icon: <Students />,
       expandable: true,
       expanded: studyGroupExpanded,
       subItems: [
@@ -25,9 +24,9 @@ const Sidebar = ({ activeItem }) => {
         { id: 'chatroom', label: 'Chatroom', path: '/chatroom' },
       ],
     },
-    { id: 'my-course', label: 'My Course', icon: BookOpen, path: '/my-course' },
-    { id: 'calendar', label: 'Calendar', icon: Calendar, path: '/calendar' },
-    { id: 'resources', label: 'Resources', icon: FileText, path: '/resources' },
+    { id: 'my-course', label: 'My Course', icon: <Course />, path: '/my-course' },
+    { id: 'calendar', label: 'Calendar', icon: <Calendar />, path: '/calendar' },
+    { id: 'resources', label: 'Resources', icon: <Book />, path: '/resources' },
   ];
 
   const handleItemClick = (item) => {
