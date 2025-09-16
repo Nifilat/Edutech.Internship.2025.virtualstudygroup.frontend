@@ -5,9 +5,12 @@ import { Input } from '@/components/ui/Input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockStudyGroups } from '../data/studyGroup';
 import CreateGroup from './CreateGroup';
+import JoinGroupPopup from '@/components/JoinGroupPopup';
 
 const JoinGroup = ({ onCreateGroupClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showJoinPopup, setShowJoinPopup] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
 
   const filteredGroups = mockStudyGroups.filter(group =>
     group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -15,8 +18,20 @@ const JoinGroup = ({ onCreateGroupClick }) => {
   );
 
   const handleJoinRoom = (groupId) => {
-    console.log('Joining room:', groupId);
-    // Implement join room logic here
+    setSelectedGroupId(groupId);
+    setShowJoinPopup(true);
+  };
+
+  const handleCancelRequest = () => {
+    console.log('Cancelling request for group:', selectedGroupId);
+    setShowJoinPopup(false);
+    setSelectedGroupId(null);
+    // Implement cancel request logic here
+  };
+
+  const handleClosePopup = () => {
+    setShowJoinPopup(false);
+    setSelectedGroupId(null);
   };
 
   const handleCreateGroupClick = () => {
@@ -137,6 +152,13 @@ const JoinGroup = ({ onCreateGroupClick }) => {
           <CreateGroup />
         </TabsContent>
       </Tabs>
+
+      {/* Join Group Popup */}
+      <JoinGroupPopup
+        isOpen={showJoinPopup}
+        onClose={handleClosePopup}
+        onCancelRequest={handleCancelRequest}
+      />
     </div>
   );
 };

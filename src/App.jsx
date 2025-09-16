@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import Dashboard from '@/pages/Dashboard';
 import CreateGroup from '@/pages/CreateGroup';
 import JoinGroup from '@/pages/JoinGroup';
+import Chatroom from '@/pages/Chatroom';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from '@/pages/auth/Login';
@@ -76,9 +77,7 @@ function App() {
             element={
               <ProtectedRoute>
                 <Layout pageTitle="Chatroom" activeNavItem="chatroom">
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Chatroom - Coming Soon</h1>
-                  </div>
+                  <Chatroom />
                 </Layout>
               </ProtectedRoute>
             }
