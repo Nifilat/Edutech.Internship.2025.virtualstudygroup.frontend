@@ -10,7 +10,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import Dashboard from "@/pages/Dashboard";
 import CreateGroup from "@/pages/CreateGroup";
 import JoinGroup from "@/pages/JoinGroup";
-// import ChatroomPage from "./pages/ChatRoom";
+import ChatroomPage from "./pages/ChatRoom";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "@/pages/auth/Login";
@@ -81,13 +81,13 @@ function App() {
             element={
               <ProtectedRoute>
                 <Layout pageTitle="Chatroom" activeNavItem="chatroom">
-                  {/* <ChatroomPage /> */}
-                  <div>
+                  <ChatroomPage />
+                  {/* <div>
                     <h2 className="text-2xl font-bold">Chatroom Page</h2>
                     <p className="mt-4 text-gray-600">
                       This is a placeholder for the Chatroom page.
                     </p>
-                  </div>
+                  </div> */}
                 </Layout>
               </ProtectedRoute>
             }
