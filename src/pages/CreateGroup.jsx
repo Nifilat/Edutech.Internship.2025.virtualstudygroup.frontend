@@ -186,13 +186,13 @@ const CreateGroup = ({ onGroupCreated }) => { // Added prop
           <Button
             variant="outline"
             onClick={handleCancel}
-            className="px-8 bg-[#E3E3E3]"
+            className="px-8 bg-[#E3E3E3] rounded-2xl"
           >
             Cancel
           </Button>
           <Button
             onClick={handleCreateGroup}
-            className="bg-orange-normal hover:bg-orange-dark text-white px-8"
+            className="bg-orange-normal hover:bg-orange-dark text-white px-8 rounded-2xl"
             disabled={!groupName || !selectedCourse || !groupDescription}
           >
             Create Group

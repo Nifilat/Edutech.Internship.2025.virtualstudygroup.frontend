@@ -57,9 +57,9 @@ const Sidebar = ({ activeItem }) => {
             <button
               onClick={() => handleItemClick(item)}
               className={cn(
-                "w-full flex items-center justify-between rounded-sm px-6 py-3 text-left hover:bg-sidebar-accent transition-colors cursor-pointer",
+                "w-full flex items-center justify-between px-6 py-3 text-left hover:bg-sidebar-accent transition-colors cursor-pointer",
                 activeItem === item.id && item.id === "dashboard"
-                  ? "bg-orange-normal text-white-normal border-r-4 border-orange-dark"
+                  ? "bg-orange-normal text-white-normal rounded-l-2xl mr-4"
                   : activeItem === item.id && item.id !== "dashboard"
                   ? "bg-sidebar-accent text-white-dark-active"
                   : "text-white-dark-active hover:text-sidebar-accent-foreground"
@@ -87,7 +87,7 @@ const Sidebar = ({ activeItem }) => {
             </button>
 
             {item.expandable && item.expanded && item.subItems && (
-              <div className="ml-4 border-l border-sidebar-border">
+              <div className="ml-11">
                 {item.subItems.map((subItem) => (
                   <NavLink
                     key={subItem.id}
@@ -96,12 +96,12 @@ const Sidebar = ({ activeItem }) => {
                       cn(
                         "w-full flex items-center px-6 py-2 text-left hover:bg-sidebar-accent transition-colors",
                         isActive
-                          ? "bg-orange-normal text-white-normal border-r-4 border-orange-dark"
+                          ? "bg-orange-normal text-white-normal rounded-l-2xl mr-4"
                           : "text-white-dark-active hover:text-sidebar-accent-foreground"
                       )
                     }
                   >
-                    <span className="font-medium text-sm ml-7">
+                    <span className="font-medium text-sm">
                       {subItem.label}
                     </span>
                   </NavLink>

@@ -91,7 +91,7 @@ const JoinGroup = ({ onCreateGroupClick }) => {
                       <h3 className="text-lg font-semibold text-black-normal">
                         {group.name}
                       </h3>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="text-sm text-gray-600">
                         {group.course}
                       </span>
                     </div>
@@ -126,7 +126,7 @@ const JoinGroup = ({ onCreateGroupClick }) => {
                   <div className="ml-6">
                     <Button
                       onClick={() => handleJoinRoom(group.id)}
-                      className="bg-orange-normal hover:bg-orange-normal-hover text-white-normal px-5 py-3.5"
+                      className="bg-orange-normal hover:bg-orange-normal-hover text-white-normal px-5 py-3.5 rounded-2xl"
                     >
                       Join Room
                     </Button>
