@@ -1,20 +1,21 @@
-import React, { useState } from 'react';
-import { Search, Users } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockStudyGroups } from '../data/studyGroup';
-import CreateGroup from './CreateGroup';
-import JoinGroupPopup from '@/components/JoinGroupPopup';
+import React, { useState } from "react";
+import { Search, Users } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { mockStudyGroups } from "../data/studyGroup";
+import CreateGroup from "./CreateGroup";
+import JoinGroupPopup from "@/components/JoinGroupPopup";
 
 const JoinGroup = ({ onCreateGroupClick }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showJoinPopup, setShowJoinPopup] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
 
-  const filteredGroups = mockStudyGroups.filter(group =>
-    group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    group.course.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredGroups = mockStudyGroups.filter(
+    (group) =>
+      group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      group.course.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleJoinRoom = (groupId) => {
@@ -23,7 +24,7 @@ const JoinGroup = ({ onCreateGroupClick }) => {
   };
 
   const handleCancelRequest = () => {
-    console.log('Cancelling request for group:', selectedGroupId);
+    console.log("Cancelling request for group:", selectedGroupId);
     setShowJoinPopup(false);
     setSelectedGroupId(null);
     // Implement cancel request logic here
@@ -91,7 +92,7 @@ const JoinGroup = ({ onCreateGroupClick }) => {
                       <h3 className="text-lg font-semibold text-black-normal">
                         {group.name}
                       </h3>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="text-sm text-gray-600">
                         {group.course}
                       </span>
                     </div>
@@ -111,7 +112,9 @@ const JoinGroup = ({ onCreateGroupClick }) => {
                         </div>
                       ))}
                       {/* Fill remaining slots with placeholders */}
-                      {Array.from({ length: Math.max(0, 3 - group.participants.length) }).map((_, index) => (
+                      {Array.from({
+                        length: Math.max(0, 3 - group.participants.length),
+                      }).map((_, index) => (
                         <div key={`empty-${index}`} className="text-center">
                           <div className="text-sm font-medium text-gray-400">
                             {group.participants.length + index + 1}
@@ -126,7 +129,7 @@ const JoinGroup = ({ onCreateGroupClick }) => {
                   <div className="ml-6">
                     <Button
                       onClick={() => handleJoinRoom(group.id)}
-                      className="bg-orange-normal hover:bg-orange-normal-hover text-white-normal px-5 py-3.5"
+                      className="bg-orange-normal hover:bg-orange-normal-hover text-white-normal px-5 py-3.5 rounded-lg"
                     >
                       Join Room
                     </Button>
@@ -139,7 +142,9 @@ const JoinGroup = ({ onCreateGroupClick }) => {
           {filteredGroups.length === 0 && (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-sm font-medium text-gray-900">No study groups found</h3>
+              <h3 className="mt-4 text-sm font-medium text-gray-900">
+                No study groups found
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
                 Try adjusting your search terms or create a new group.
               </p>
