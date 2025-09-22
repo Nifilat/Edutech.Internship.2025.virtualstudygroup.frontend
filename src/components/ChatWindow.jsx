@@ -1,11 +1,21 @@
-import React from "react";
+import React, { useState, useRef } from "react";
+// import Picker from '@emoji-mart/react';
 import { Users, Phone, Video, Search, MoreHorizontal, Smile, Paperclip, Mic, Send } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { messages } from "../data/chatData";
 
-function ChatWindow({ activeChat, message, setMessage, handleSendMessage }) {
+function ChatWindow({ activeChat, message, setMessage, handleSendMessage, handleInputKeyDown, loading, isSendDisabled }) {
+  // const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const inputRef = useRef(null);
+
+  const handleEmojiSelect = (emoji) => {
+    // emoji-mart v5+ uses emoji.native for the emoji character
+    setMessage((prev) => prev + (emoji.native || emoji.emojis || ''));
+    setShowEmojiPicker(false);
+    if (inputRef.current) inputRef.current.focus();
+  };
   if (!activeChat) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -118,31 +128,59 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage }) {
       {/* Message Input */}
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
-            <Smile className="w-5 h-5" />
-          </Button>
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-400 hover:text-gray-600"
+              type="button"
+              aria-label="Add emoji"
+              // onClick={() => setShowEmojiPicker((v) => !v)}
+            >
+              <Smile className="w-5 h-5" />
+            </Button>
+            {/* 
+            {showEmojiPicker && (
+              <div className="absolute z-50 bottom-12 left-0">
+                <Picker onSelect={handleEmojiSelect} theme="light" />
+              </div>
+            )} 
+            */}
+          </div>
           <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
             <Paperclip className="w-5 h-5" />
           </Button>
           <div className="flex-1 relative">
             <Input
+              ref={inputRef}
               type="text"
               placeholder="Type message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              onKeyDown={handleInputKeyDown}
+              aria-label="Type your message"
+              disabled={loading}
               className="pr-20 bg-gray-50 border-gray-200 rounded-full"
             />
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 w-8 h-8">
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 w-8 h-8" disabled={loading}>
                 <Mic className="w-4 h-4" />
               </Button>
               <Button 
                 onClick={handleSendMessage}
                 size="icon" 
                 className="bg-orange-normal hover:bg-orange-dark text-white w-8 h-8"
+                disabled={isSendDisabled}
+                aria-label="Send message"
               >
-                <Send className="w-4 h-4" />
+                {loading ? (
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
               </Button>
             </div>
           </div>
