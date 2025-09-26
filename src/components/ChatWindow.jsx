@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
+import data from '@emoji-mart/data';
 import {
   UserGroup,
   AddTeam,
@@ -61,12 +62,8 @@ function ChatWindow({
   const renderChatAvatar = () => {
     if (activeChat.isGroup) {
       return (
-        <div className="relative flex items-center justify-center">
+        <div className="flex items-center justify-center">
           <UserGroup />
-          {/* Participants count badge */}
-          <div className="absolute -top-1 -right-1 bg-orange-normal text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
-            {participantsCount}
-          </div>
         </div>
       );
     }
@@ -111,10 +108,14 @@ function ChatWindow({
           <Button
             variant="ghost"
             size="icon"
-            className="text-orange-normal hover:text-orange-dark"
+            className="text-orange-normal hover:text-orange-dark relative"
             onClick={() => setShowParticipantsPopup(true)}
           >
             <AddTeam className="" />
+            {/* Participants count badge */}
+            <div className="absolute -top-1 -right-1 bg-orange-normal text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+              {participantsCount}
+            </div>
           </Button>
           <Button
             variant="ghost"
