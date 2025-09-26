@@ -1,18 +1,36 @@
 import React, { useState, useRef } from "react";
 // import Picker from '@emoji-mart/react';
-import { Users, Phone, Video, Search, MoreHorizontal, Smile, Paperclip, Mic, Send } from "lucide-react";
+import {
+  UserGroup,
+  AddTeam,
+  Phone,
+  Video,
+  Search,
+  MoreHorizontal,
+  Paperclip,
+  Mic,
+  Send,
+} from "./icons";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { messages } from "../data/chatData";
 
-function ChatWindow({ activeChat, message, setMessage, handleSendMessage, handleInputKeyDown, loading, isSendDisabled }) {
+function ChatWindow({
+  activeChat,
+  message,
+  setMessage,
+  handleSendMessage,
+  handleInputKeyDown,
+  loading,
+  isSendDisabled,
+}) {
   // const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const inputRef = useRef(null);
 
   const handleEmojiSelect = (emoji) => {
     // emoji-mart v5+ uses emoji.native for the emoji character
-    setMessage((prev) => prev + (emoji.native || emoji.emojis || ''));
+    setMessage((prev) => prev + (emoji.native || emoji.emojis || ""));
     setShowEmojiPicker(false);
     if (inputRef.current) inputRef.current.focus();
   };
@@ -20,8 +38,8 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage, handle
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-gray-400" />
+          <div className=" flex items-center justify-center mx-auto mb-4">
+            <UserGroup className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Select a conversation
@@ -37,18 +55,21 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage, handle
   const renderChatAvatar = () => {
     if (activeChat.isGroup) {
       return (
-        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-          <Users className="w-6 h-6 text-gray-500" />
+        <div className=" flex items-center justify-center">
+          <UserGroup />
         </div>
       );
     }
-    
+
     return (
       <div className="relative">
         <Avatar className="w-12 h-12">
           <AvatarImage src={activeChat.avatar} alt={activeChat.name} />
           <AvatarFallback className="bg-orange-200 text-orange-800">
-            {activeChat.name.split(' ').map(n => n[0]).join('')}
+            {activeChat.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")}
           </AvatarFallback>
         </Avatar>
         {activeChat.isOnline && (
@@ -77,19 +98,39 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage, handle
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
-            <Users className="w-5 h-5" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-orange-normal hover:text-orange-dark"
+          >
+            <AddTeam className="" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-orange-normal hover:text-orange-dark"
+          >
             <Phone className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-orange-normal hover:text-orange-dark"
+          >
             <Video className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-orange-normal hover:text-orange-dark"
+          >
             <Search className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-orange-normal hover:text-orange-dark"
+          >
             <MoreHorizontal className="w-5 h-5" />
           </Button>
         </div>
@@ -100,22 +141,29 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage, handle
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${msg.isOwn ? "justify-end" : "justify-start"}`}
           >
-            <div className={`flex max-w-xs lg:max-w-md ${msg.isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div
+              className={`flex max-w-xs lg:max-w-md ${
+                msg.isOwn ? "flex-row-reverse" : "flex-row"
+              }`}
+            >
               {!msg.isOwn && (
                 <Avatar className="w-8 h-8 mr-2">
                   <AvatarImage src={msg.avatar} alt={msg.sender} />
                   <AvatarFallback className="bg-orange-200 text-orange-800 text-xs">
-                    {msg.sender.split(' ').map(n => n[0]).join('')}
+                    {msg.sender
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
               )}
               <div
                 className={`px-4 py-2 rounded-lg ${
                   msg.isOwn
-                    ? 'bg-orange-light text-black-normal rounded-br-none'
-                    : 'bg-orange-light text-black-normal rounded-bl-none'
+                    ? "bg-orange-light text-black-normal rounded-br-none"
+                    : "bg-orange-light text-black-normal rounded-bl-none"
                 }`}
               >
                 <p className="text-sm font-normal">{msg.message}</p>
@@ -137,7 +185,11 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage, handle
               aria-label="Add emoji"
               // onClick={() => setShowEmojiPicker((v) => !v)}
             >
-              <Smile className="w-5 h-5" />
+              <img
+                src="src/components/icons/smile.png"
+                alt="Smile"
+                className="w-5 h-5"
+              />
             </Button>
             {/* 
             {showEmojiPicker && (
@@ -147,7 +199,11 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage, handle
             )} 
             */}
           </div>
-          <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-400 hover:text-gray-600"
+          >
             <Paperclip className="w-5 h-5" />
           </Button>
           <div className="flex-1 relative">
@@ -163,23 +219,41 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage, handle
               className="pr-20 bg-gray-50 border-gray-200 rounded-full"
             />
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 w-8 h-8" disabled={loading}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-400 hover:text-gray-600 w-8 h-8"
+                disabled={loading}
+              >
                 <Mic className="w-4 h-4" />
               </Button>
-              <Button 
+              <Button
+                variant={"ghost"}
                 onClick={handleSendMessage}
-                size="icon" 
-                className="bg-orange-normal hover:bg-orange-dark text-white w-8 h-8"
+                size="icon"
+                className="bg-inherit ho"
                 disabled={isSendDisabled}
                 aria-label="Send message"
               >
                 {loading ? (
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8z"
+                    />
                   </svg>
                 ) : (
-                  <Send className="w-4 h-4" />
+                  <Send className="" />
                 )}
               </Button>
             </div>

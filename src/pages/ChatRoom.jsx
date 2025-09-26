@@ -7,7 +7,7 @@ const Chatroom = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [message, setMessage] = useState('');
   const [activeTab, setActiveTab] = useState('Chat');
-  const [selectedChat, setSelectedChat] = useState(chats[1]); // Duke Manni selected by default
+  const [selectedChat, setSelectedChat] = useState(chats[1]); 
   const [loading, setLoading] = useState(false);
 
   const handleSendMessage = () => {

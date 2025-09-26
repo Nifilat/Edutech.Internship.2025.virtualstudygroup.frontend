@@ -11,16 +11,6 @@ export const chats = [
   },
   {
     id: 2,
-    name: "Duke Manni",
-    lastMessage: "Haha that's terrifying 😂",
-    time: "07:38 AM",
-    avatar: "https://i.pravatar.cc/150?img=2",
-    isGroup: false,
-    unreadCount: 0,
-    isOnline: true
-  },
-  {
-    id: 3,
     name: "Statistics III (024)",
     lastMessage: "perfect!",
     time: "11:49 PM",
@@ -29,16 +19,7 @@ export const chats = [
     unreadCount: 3
   },
   {
-    id: 4,
-    name: "Adeola Manni",
-    lastMessage: "omg, this is amazing...",
-    time: "07:40 AM",
-    avatar: "https://i.pravatar.cc/150?img=4",
-    isGroup: false,
-    unreadCount: 1
-  },
-  {
-    id: 5,
+    id: 3,
     name: "Statistics III (024)",
     lastMessage: "aww",
     time: "08:20 PM",
@@ -47,7 +28,7 @@ export const chats = [
     unreadCount: 1
   },
   {
-    id: 6,
+    id: 4,
     name: "Statistics III (024)",
     lastMessage: "I'll be there in 2 minutes",
     time: "01:09 AM",
@@ -55,15 +36,7 @@ export const chats = [
     isGroup: true,
     unreadCount: 1
   },
-  {
-    id: 7,
-    name: "Darrell Steward",
-    lastMessage: "Haha that's terrifying 😂",
-    time: "01:55 PM",
-    avatar: "https://i.pravatar.cc/150?img=7",
-    isGroup: false,
-    unreadCount: 1
-  },
+  
 ];
 
 export const messages = [

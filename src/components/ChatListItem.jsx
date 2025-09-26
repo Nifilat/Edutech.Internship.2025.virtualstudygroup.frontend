@@ -1,13 +1,13 @@
 import React from "react";
-import { Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { UserGroup } from "./icons";
 
 function ChatListItem({ chat, isActive, onClick }) {
   const renderChatAvatar = () => {
     if (chat.isGroup) {
       return (
-        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-          <Users className="w-6 h-6 text-gray-500" />
+        <div className="w-12 h-12 flex items-center justify-center">
+          <UserGroup className="" />
         </div>
       );
     }
