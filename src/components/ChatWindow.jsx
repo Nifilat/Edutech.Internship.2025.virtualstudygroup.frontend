@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, Phone, Video, Search, MoreHorizontal, Smile, Paperclip, Mic, Send } from "lucide-react";
+import { UserGroup, AddTeam, Phone, Video, Search, MoreHorizontal, Paperclip, Mic, Send } from "./icons";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -10,8 +10,8 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage }) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-gray-400" />
+          <div className=" flex items-center justify-center mx-auto mb-4">
+            <UserGroup className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Select a conversation
@@ -27,8 +27,8 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage }) {
   const renderChatAvatar = () => {
     if (activeChat.isGroup) {
       return (
-        <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-          <Users className="w-6 h-6 text-gray-500" />
+        <div className=" flex items-center justify-center">
+          <UserGroup  />
         </div>
       );
     }
@@ -68,7 +68,7 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage }) {
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
-            <Users className="w-5 h-5" />
+            <AddTeam className="" />
           </Button>
           <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
             <Phone className="w-5 h-5" />
@@ -119,7 +119,7 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage }) {
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
-            <Smile className="w-5 h-5" />
+            <img src="src/components/icons/smile.png" alt="Smile" className="w-5 h-5" />
           </Button>
           <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
             <Paperclip className="w-5 h-5" />
@@ -138,11 +138,12 @@ function ChatWindow({ activeChat, message, setMessage, handleSendMessage }) {
                 <Mic className="w-4 h-4" />
               </Button>
               <Button 
+              variant={"ghost"}
                 onClick={handleSendMessage}
                 size="icon" 
-                className="bg-orange-normal hover:bg-orange-dark text-white w-8 h-8"
+                className="bg-inherit ho"
               >
-                <Send className="w-4 h-4" />
+                <Send className="" />
               </Button>
             </div>
           </div>
