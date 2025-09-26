@@ -38,29 +38,3 @@ export const chats = [
   },
   
 ];
-
-export const messages = [
-  {
-    id: 1,
-    sender: 'User',
-    message: 'As a student, I want to search for and join an existing study group so I can collaborate with peers in my class and program.',
-    time: '2:30 PM',
-    isOwn: false,
-    avatar: 'https://i.pravatar.cc/150?img=1'
-  },
-  {
-    id: 2,
-    sender: 'User',
-    message: 'As a student, I want to search for and join an existing study group so I can collaborate with peers in my class and program.',
-    time: '2:32 PM',
-    isOwn: false,
-    avatar: 'https://i.pravatar.cc/150?img=1'
-  },
-  {
-    id: 3,
-    sender: 'You',
-    message: 'Add a new member to the group. So you should say Hi',
-    time: '2:35 PM',
-    isOwn: true
-  }
-];

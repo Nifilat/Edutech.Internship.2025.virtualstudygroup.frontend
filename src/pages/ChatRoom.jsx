@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ChatSidebar from '@/components/ChatSidebar';
 import ChatWindow from '@/components/ChatWindow';
 import { chats } from '@/data/chatData';
+import { useAuth } from '@/hooks/useAuth';
 
 const Chatroom = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -9,12 +10,50 @@ const Chatroom = () => {
   const [activeTab, setActiveTab] = useState('Chat');
   const [selectedChat, setSelectedChat] = useState(chats[1]); 
   const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      sender: 'User',
+      message: 'As a student, I want to search for and join an existing study group so I can collaborate with peers in my class and program.',
+      time: '2:30 PM',
+      isOwn: false,
+      avatar: 'https://i.pravatar.cc/150?img=1'
+    },
+    {
+      id: 2,
+      sender: 'User',
+      message: 'As a student, I want to search for and join an existing study group so I can collaborate with peers in my class and program.',
+      time: '2:32 PM',
+      isOwn: false,
+      avatar: 'https://i.pravatar.cc/150?img=1'
+    },
+    {
+      id: 3,
+      sender: 'You',
+      message: 'Add a new member to the group. So you should say Hi',
+      time: '2:35 PM',
+      isOwn: true
+    }
+  ]);
+
+  const { getUser } = useAuth();
+  const user = getUser();
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
     setLoading(true);
+    
+    // Create new message
+    const newMessage = {
+      id: messages.length + 1,
+      sender: user ? `${user.first_name} ${user.last_name}` : 'You',
+      message: message.trim(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isOwn: true
+    };
+
     setTimeout(() => {
-      console.log('Sending message:', message);
+      setMessages(prev => [...prev, newMessage]);
       setMessage('');
       setLoading(false);
     }, 300); // Simulate async send
@@ -49,6 +88,7 @@ const Chatroom = () => {
             handleInputKeyDown={handleInputKeyDown}
             loading={loading}
             isSendDisabled={!message.trim() || loading}
+            messages={messages}
           />
         </>
       ) : (
