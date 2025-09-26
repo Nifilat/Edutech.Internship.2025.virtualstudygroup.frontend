@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
-// import Picker from '@emoji-mart/react';
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
 import {
   UserGroup,
   AddTeam,
@@ -14,7 +15,7 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { messages } from "../data/chatData";
+import GroupParticipantsPopup from "./GroupParticpantPopup";
 
 function ChatWindow({
   activeChat,
@@ -24,16 +25,21 @@ function ChatWindow({
   handleInputKeyDown,
   loading,
   isSendDisabled,
+  messages,
 }) {
-  // const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showParticipantsPopup, setShowParticipantsPopup] = useState(false);
   const inputRef = useRef(null);
 
   const handleEmojiSelect = (emoji) => {
-    // emoji-mart v5+ uses emoji.native for the emoji character
-    setMessage((prev) => prev + (emoji.native || emoji.emojis || ""));
+    setMessage((prev) => prev + emoji.native);
     setShowEmojiPicker(false);
     if (inputRef.current) inputRef.current.focus();
   };
+
+  // Mock participants count for display
+  const participantsCount = 20;
+
   if (!activeChat) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -55,7 +61,7 @@ function ChatWindow({
   const renderChatAvatar = () => {
     if (activeChat.isGroup) {
       return (
-        <div className=" flex items-center justify-center">
+        <div className="flex items-center justify-center">
           <UserGroup />
         </div>
       );
@@ -101,9 +107,14 @@ function ChatWindow({
           <Button
             variant="ghost"
             size="icon"
-            className="text-orange-normal hover:text-orange-dark"
+            className="text-orange-normal hover:text-orange-dark relative"
+            onClick={() => setShowParticipantsPopup(true)}
           >
             <AddTeam className="" />
+            {/* Participants count badge */}
+            <div className="absolute top-1 right-1 bg-orange-normal text-white text-[6px] rounded-full w-3 h-3 flex items-center justify-center font-medium">
+              {participantsCount}
+            </div>
           </Button>
           <Button
             variant="ghost"
@@ -137,7 +148,7 @@ function ChatWindow({
       </div>
 
       {/* Messages Area */}
-      <div className="flex flex-col gap-16 flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -167,6 +178,7 @@ function ChatWindow({
                 }`}
               >
                 <p className="text-sm font-normal">{msg.message}</p>
+                <p className="text-xs text-gray-500 mt-1">{msg.time}</p>
               </div>
             </div>
           </div>
@@ -183,7 +195,7 @@ function ChatWindow({
               className="text-gray-400 hover:text-gray-600"
               type="button"
               aria-label="Add emoji"
-              // onClick={() => setShowEmojiPicker((v) => !v)}
+              onClick={() => setShowEmojiPicker((v) => !v)}
             >
               <img
                 src="src/components/icons/smile.png"
@@ -191,13 +203,16 @@ function ChatWindow({
                 className="w-5 h-5"
               />
             </Button>
-            {/* 
             {showEmojiPicker && (
               <div className="absolute z-50 bottom-12 left-0">
-                <Picker onSelect={handleEmojiSelect} theme="light" />
+                <Picker
+                  data={data}
+                  onEmojiSelect={handleEmojiSelect}
+                  theme="light"
+                  previewPosition="none"
+                />
               </div>
-            )} 
-            */}
+            )}
           </div>
           <Button
             variant="ghost"
@@ -260,6 +275,13 @@ function ChatWindow({
           </div>
         </div>
       </div>
+
+      {/* Group Participants Popup */}
+      <GroupParticipantsPopup
+        isOpen={showParticipantsPopup}
+        onClose={() => setShowParticipantsPopup(false)}
+        groupName={activeChat?.name}
+      />
     </div>
   );
 }
