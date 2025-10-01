@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { X, Plus, Search } from "lucide-react";
@@ -7,32 +7,64 @@ function ParticipantsList({
   participants,
   availableParticipants,
   onParticipantsChange,
-  onClose
+  onClose,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedParticipants, setSelectedParticipants] = useState([...participants]);
+  const [selectedParticipants, setSelectedParticipants] = useState([
+    ...participants,
+  ]);
   const [imageErrors, setImageErrors] = useState(new Set());
+  const [filteredParticipants, setFilteredParticipants] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Filter available participants based on search query
-  const filteredParticipants = useMemo(() => {
-    return availableParticipants.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.username.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesSearch;
-    });
-  }, [availableParticipants, searchQuery]);
+  // 🔹 API call to search participants
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      if (!searchQuery.trim()) {
+        setFilteredParticipants(availableParticipants || []);
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `/api/study-groups/participants/search?query=${encodeURIComponent(
+            searchQuery
+          )}`
+        );
+        const data = await res.json();
+        if (res.ok) {
+          setFilteredParticipants(data?.data || []);
+        } else {
+          console.error("Search error:", data.message);
+          setFilteredParticipants([]);
+        }
+      } catch (err) {
+        console.error("Search failed:", err);
+        setFilteredParticipants([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // 🔹 Debounce: wait 400ms after typing
+    const timeout = setTimeout(fetchParticipants, 400);
+    return () => clearTimeout(timeout);
+  }, [searchQuery, availableParticipants]);
 
   const handleImageError = (participantId) => {
-    setImageErrors(prev => new Set([...prev, participantId]));
+    setImageErrors((prev) => new Set([...prev, participantId]));
   };
+
   const handleAddParticipant = (participant) => {
-    if (!selectedParticipants.find(p => p.id === participant.id)) {
+    if (!selectedParticipants.find((p) => p.id === participant.id)) {
       setSelectedParticipants([...selectedParticipants, participant]);
     }
   };
 
   const handleRemoveParticipant = (participantId) => {
-    setSelectedParticipants(selectedParticipants.filter(p => p.id !== participantId));
+    setSelectedParticipants(
+      selectedParticipants.filter((p) => p.id !== participantId)
+    );
   };
 
   const handleAdd = () => {
@@ -41,14 +73,19 @@ function ParticipantsList({
   };
 
   const handleCancel = () => {
-    setSelectedParticipants([...participants]); 
+    setSelectedParticipants([...participants]);
     onClose();
   };
 
   const renderAvatar = (participant, size = "w-12 h-12") => {
-    const initials = participant.name.split(' ').map(n => n[0]).join('').toUpperCase();
-    const hasValidAvatar = participant.avatarUrl && !imageErrors.has(participant.id);
-    
+    const initials = participant.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+    const hasValidAvatar =
+      participant.avatarUrl && !imageErrors.has(participant.id);
+
     if (hasValidAvatar) {
       return (
         <img
@@ -59,13 +96,16 @@ function ParticipantsList({
         />
       );
     }
-    
+
     return (
-      <div className={`${size} bg-orange-200 rounded-full flex items-center justify-center text-sm font-semibold text-gray-700`}>
+      <div
+        className={`${size} bg-orange-200 rounded-full flex items-center justify-center text-sm font-semibold text-gray-700`}
+      >
         {initials}
       </div>
     );
   };
+
   return (
     <div className="w-full max-w-md bg-white rounded-lg">
       {/* Header */}
@@ -109,22 +149,27 @@ function ParticipantsList({
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder=""
+            placeholder="Search participants..."
             className="pl-10 bg-gray-50 border border-gray-200 rounded-lg h-12 focus:border-[#D2401E] focus:ring-[#D2401E]"
           />
         </div>
 
         {/* Participants List */}
         <div className="max-h-80 overflow-y-auto space-y-3 mb-6">
-          {filteredParticipants.length === 0 ? (
+          {loading ? (
+            <p className="text-sm text-gray-500 text-center py-8">
+              Searching...
+            </p>
+          ) : filteredParticipants.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-8">
               No participants found
             </p>
           ) : (
             filteredParticipants.map((participant) => {
-              const isSelected = selectedParticipants.find(p => p.id === participant.id);
-              const initials = participant.name.split(' ').map(n => n[0]).join('').toUpperCase();
-              
+              const isSelected = selectedParticipants.find(
+                (p) => p.id === participant.id
+              );
+
               return (
                 <div
                   key={participant.id}
@@ -133,8 +178,12 @@ function ParticipantsList({
                   <div className="flex items-center gap-3">
                     {renderAvatar(participant)}
                     <div>
-                      <p className="font-semibold text-gray-900 text-sm">{participant.name}</p>
-                      <p className="text-xs text-gray-500">{participant.username}</p>
+                      <p className="font-semibold text-gray-900 text-sm">
+                        {participant.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {participant.username}
+                      </p>
                     </div>
                   </div>
                   <button
