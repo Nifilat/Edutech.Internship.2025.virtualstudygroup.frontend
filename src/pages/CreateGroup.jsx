@@ -17,7 +17,6 @@ import { toast } from "sonner";
 import { Add } from "../components/icons";
 
 const CreateGroup = ({ onGroupCreated }) => {
-  // Added prop
   const [groupName, setGroupName] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
@@ -78,10 +77,6 @@ const CreateGroup = ({ onGroupCreated }) => {
     setGroupDescription("");
     setParticipants([]);
   };
-
-  // const eligibleParticipants = mockParticipants.filter(
-  //   (p) => p.course === selectedCourse
-  // );
 
   const handleParticipantsChange = (newParticipants) => {
     setParticipants(newParticipants);
@@ -199,7 +194,7 @@ const CreateGroup = ({ onGroupCreated }) => {
         <DialogContent className="max-w-md p-0 gap-0" showCloseButton={false}>
           <ParticipantsList
             participants={participants}
-            availableParticipants={[]}
+            availableParticipants={participants}
             onParticipantsChange={handleParticipantsChange}
             onClose={() => setOpenModal(false)}
           />
