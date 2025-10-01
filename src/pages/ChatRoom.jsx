@@ -1,14 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ChatSidebar from "@/components/ChatSidebar";
 import ChatWindow from "@/components/ChatWindow";
-import { chats } from "@/data/chatData";
 import { useAuth } from "@/hooks/useAuth";
+import { studyGroupAPI } from "../lib/api";
 
 const Chatroom = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState("Chat");
-  const [selectedChat, setSelectedChat] = useState(chats[1]);
+  const [selectedChat, setSelectedChat] = useState(null);
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -37,15 +37,66 @@ const Chatroom = () => {
       isOwn: true,
     },
   ]);
+  const [chats, setChats] = useState([]);
 
   const { getUser } = useAuth();
   const user = getUser();
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        // Fetch both groups and courses
+        const [groupsData, coursesData] = await Promise.all([
+          studyGroupAPI.getUserGroups(),
+          studyGroupAPI.getCourses(),
+        ]);
+
+        if (groupsData?.data?.length) {
+          // Create a courses map for quick lookup
+          const coursesMap = new Map(
+            coursesData?.map((course) => [course.id.toString(), course]) || []
+          );
+
+          // Transform API groups into chat objects with course info
+          const transformed = groupsData.data
+            .filter((group) => group && group.id) // Filter out null/undefined groups
+            .map((group) => {
+              const course = coursesMap.get(group.course_id);
+              
+              return {
+                id: group.id,
+                groupId: group.group_id,
+                name: group.group_name,
+                courseCode: course?.course_code || `Course ${group.course_id}`,
+                courseName: course?.course_name || "",
+                lastMessage: group.description || "Start chatting...",
+                time: new Date(group.updated_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                avatar: null,
+                isGroup: true,
+                unreadCount: 0,
+              };
+            });
+
+          setChats(transformed);
+          if (transformed.length > 0) {
+            setSelectedChat(transformed[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching groups:", err);
+      }
+    };
+
+    fetchGroups();
+  }, []);
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
     setLoading(true);
 
-    // Create new message
     const newMessage = {
       id: messages.length + 1,
       sender: user ? `${user.first_name} ${user.last_name}` : "You",
@@ -61,10 +112,9 @@ const Chatroom = () => {
       setMessages((prev) => [...prev, newMessage]);
       setMessage("");
       setLoading(false);
-    }, 300); // Simulate async send
+    }, 300);
   };
 
-  // Handle Enter key for sending message
   const handleInputKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
