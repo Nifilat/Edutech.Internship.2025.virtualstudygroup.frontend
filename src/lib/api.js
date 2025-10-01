@@ -68,4 +68,14 @@ export const studyGroupAPI = {
     const response = await api.get("/study-groups/getcourses");
     return response.data;
   },
+
+  getUserGroups: async () => {
+    const response = await api.get("/study-groups/getUserGroups");
+    return response.data;
+  },
+
+  getAllStudyRooms: async () => {
+    const response = await api.get("/study-rooms");
+    return response.data; 
+  },
 };
