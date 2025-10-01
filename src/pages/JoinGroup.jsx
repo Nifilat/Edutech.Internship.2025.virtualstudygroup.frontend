@@ -1,21 +1,24 @@
 import React, { useState } from "react";
-import { Search, Users } from "lucide-react";
+import { Search, Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockStudyGroups } from "../data/studyGroup";
 import CreateGroup from "./CreateGroup";
 import JoinGroupPopup from "@/components/JoinGroupPopup";
+import { useStudyRoomsWithCourses } from "@/hooks/useStudyGroup";
 
 const JoinGroup = ({ onCreateGroupClick }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showJoinPopup, setShowJoinPopup] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
 
-  const filteredGroups = mockStudyGroups.filter(
+  const { data: studyGroups, isLoading, error } = useStudyRoomsWithCourses();
+
+  const filteredGroups = studyGroups.filter(
     (group) =>
-      group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.course.toLowerCase().includes(searchQuery.toLowerCase())
+      group.group_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      group.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      group.course_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleJoinRoom = (groupId) => {
@@ -27,7 +30,6 @@ const JoinGroup = ({ onCreateGroupClick }) => {
     console.log("Cancelling request for group:", selectedGroupId);
     setShowJoinPopup(false);
     setSelectedGroupId(null);
-    // Implement cancel request logic here
   };
 
   const handleClosePopup = () => {
@@ -44,7 +46,6 @@ const JoinGroup = ({ onCreateGroupClick }) => {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <Tabs defaultValue="study-rooms" className="w-full">
-        {/* Custom styled TabsList to match original design */}
         <div className="border-t border-b border-gray-200">
           <TabsList className="h-auto p-0 bg-transparent border-0 space-x-8 -mb-px">
             <TabsTrigger
@@ -63,7 +64,6 @@ const JoinGroup = ({ onCreateGroupClick }) => {
           </TabsList>
         </div>
 
-        {/* Study Rooms Content */}
         <TabsContent value="study-rooms" className="space-y-6 mt-6">
           {/* Search Bar */}
           <div className="relative">
@@ -79,86 +79,89 @@ const JoinGroup = ({ onCreateGroupClick }) => {
             />
           </div>
 
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-orange-normal" />
+              <span className="ml-2 text-gray-600">Loading study rooms...</span>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="text-center py-12">
+              <p className="text-red-500">
+                Failed to load study rooms. Please try again.
+              </p>
+            </div>
+          )}
+
           {/* Study Groups List */}
-          <div className="space-y-4">
-            {filteredGroups.map((group) => (
-              <div
-                key={group.id}
-                className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold text-black-normal">
-                        {group.name}
-                      </h3>
-                      <span className="text-sm text-gray-600">
-                        {group.course}
-                      </span>
+          {!isLoading && !error && (
+            <div className="space-y-4">
+              {filteredGroups.map((group) => (
+                <div
+                  key={group.id}
+                  className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="text-lg font-semibold text-black-normal">
+                          {group.group_name}
+                        </h3>
+                        <span className="text-sm font-medium text-orange-normal bg-orange-50 px-3 py-1 rounded">
+                          {group.course_code}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 mb-2">
+                        {group.course_name}
+                      </p>
+                      <p className="text-gray-600 text-sm mb-4">
+                        {group.description}
+                      </p>
+                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                        <span>Group ID: {group.group_id}</span>
+                        <span>
+                          Created:{" "}
+                          {new Date(group.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-gray-600 text-sm mb-4">
-                      {group.description}
-                    </p>
-                    {/* Participant Grid */}
-                    <div className="grid grid-cols-3 gap-4">
-                      {group.participants.map((participant, index) => (
-                        <div key={participant.id} className="text-center">
-                          <div className="text-sm font-medium text-gray-700">
-                            {index + 1}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {participant.name}
-                          </div>
-                        </div>
-                      ))}
-                      {/* Fill remaining slots with placeholders */}
-                      {Array.from({
-                        length: Math.max(0, 3 - group.participants.length),
-                      }).map((_, index) => (
-                        <div key={`empty-${index}`} className="text-center">
-                          <div className="text-sm font-medium text-gray-400">
-                            {group.participants.length + index + 1}
-                          </div>
-                          <div className="text-xs text-gray-400 mt-1">
-                            Available
-                          </div>
-                        </div>
-                      ))}
+                    <div className="ml-6">
+                      <Button
+                        onClick={() => handleJoinRoom(group.group_id)}
+                        className="bg-orange-normal hover:bg-orange-normal-hover text-white-normal px-5 py-3.5 rounded-lg"
+                      >
+                        Join Room
+                      </Button>
                     </div>
-                  </div>
-                  <div className="ml-6">
-                    <Button
-                      onClick={() => handleJoinRoom(group.id)}
-                      className="bg-orange-normal hover:bg-orange-normal-hover text-white-normal px-5 py-3.5 rounded-lg"
-                    >
-                      Join Room
-                    </Button>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
-          {filteredGroups.length === 0 && (
+          {!isLoading && !error && filteredGroups.length === 0 && (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-4 text-sm font-medium text-gray-900">
                 No study groups found
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                Try adjusting your search terms or create a new group.
+                {searchQuery
+                  ? "Try adjusting your search terms or create a new group."
+                  : "No study groups available yet. Create one to get started!"}
               </p>
             </div>
           )}
         </TabsContent>
 
-        {/* Create Group Content (placeholder) */}
         <TabsContent value="create-group" className="space-y-6 mt-6">
           <CreateGroup />
         </TabsContent>
       </Tabs>
 
-      {/* Join Group Popup */}
       <JoinGroupPopup
         isOpen={showJoinPopup}
         onClose={handleClosePopup}
