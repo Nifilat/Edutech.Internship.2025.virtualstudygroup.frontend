@@ -78,4 +78,9 @@ export const studyGroupAPI = {
     const response = await api.get("/study-rooms");
     return response.data; 
   },
+
+  joinGroup: async (groupId) => {
+    const response = await api.post(`/study-groups/${groupId}/join-request`);
+    return response.data;
+  },
 };
