@@ -9,7 +9,7 @@ const AuthLayout = ({ children, title, subtitle }) => {
         <div className="flex justify-center">
           <Link to="/" className="flex items-center gap-0.5">
             <img
-              src="/src/assets/logo.svg"
+              src="/logo.svg"
               alt="Logo"
               className="h-10 w-auto"
             />

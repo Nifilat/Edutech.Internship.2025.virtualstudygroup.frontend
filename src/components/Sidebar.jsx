@@ -45,7 +45,7 @@ const Sidebar = ({ activeItem }) => {
       {/* Logo */}
       <div className="flex items-center px-6 h-16 border-b border-sidebar-border">
         <div className="flex items-center gap-0.5">
-          <img src="src/assets/logo.svg" alt="Logo" className="h-8 w-auto" />
+          <img src="/logo.svg" alt="Logo" className="h-8 w-auto" />
           <span className="text-xl font-medium text-black">edifyLMS</span>
         </div>
       </div>
