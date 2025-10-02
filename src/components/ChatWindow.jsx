@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
-import Picker from "emoji-mart"; 
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
 import {
   UserGroup,
   AddTeam,
@@ -36,6 +37,7 @@ function ChatWindow({
     if (inputRef.current) inputRef.current.focus();
   };
 
+  // Mock participants count for display
   const participantsCount = 20;
 
   if (!activeChat) {
@@ -109,6 +111,7 @@ function ChatWindow({
             onClick={() => setShowParticipantsPopup(true)}
           >
             <AddTeam className="" />
+            {/* Participants count badge */}
             <div className="absolute top-1 right-1 bg-orange-normal text-white text-[6px] rounded-full w-3 h-3 flex items-center justify-center font-medium">
               {participantsCount}
             </div>
@@ -203,6 +206,7 @@ function ChatWindow({
             {showEmojiPicker && (
               <div className="absolute z-50 bottom-12 left-0">
                 <Picker
+                  data={data}
                   onEmojiSelect={handleEmojiSelect}
                   theme="light"
                   previewPosition="none"
@@ -272,6 +276,7 @@ function ChatWindow({
         </div>
       </div>
 
+      {/* Group Participants Popup */}
       <GroupParticipantsPopup
         isOpen={showParticipantsPopup}
         onClose={() => setShowParticipantsPopup(false)}
