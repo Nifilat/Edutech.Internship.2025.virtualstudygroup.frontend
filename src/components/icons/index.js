@@ -14,3 +14,4 @@ export { default as MoreHorizontal } from './MoreHorizontal';
 export { default as Paperclip } from './Paperclip';
 export { default as Mic } from './Mic';
 export { default as Send } from './Send';
+export { default as ArrowLeft } from './ArrowLeft';
