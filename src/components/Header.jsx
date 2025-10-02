@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Settings, Bell, ChevronDown } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -7,12 +7,49 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import NotificationDropdown from "./NotificationDropdown";
+import { studyGroupAPI } from "@/lib/api";
 
 const Header = ({ pageTitle }) => {
   const { logout, getUser } = useAuth();
   const user = getUser();
+  const [notifications, setNotifications] = useState([]);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await studyGroupAPI.getNotifications();
+      // Assuming the API returns { data: [...notifications] }
+      const notifs = data?.data || [];
+      setNotifications(notifs);
+      // Count unread/pending notifications
+      const unread = notifs.filter(
+        (n) => n.status === "pending"
+      ).length;
+      setUnreadCount(unread);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleNotificationHandled = () => {
+    fetchNotifications();
+  };
 
   const handleLogout = () => {
     logout();
@@ -33,10 +70,25 @@ const Header = ({ pageTitle }) => {
             <Settings className="w-5 h-5" />
           </Button>
 
-          {/* Notifications Button */}
-          <Button variant="ghost" size="icon">
-            <Bell className="w-5 h-5" />
-          </Button>
+          {/* Notifications Button with Popover */}
+          <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              <NotificationDropdown
+                notifications={notifications}
+                onNotificationHandled={handleNotificationHandled}
+              />
+            </PopoverContent>
+          </Popover>
 
           {/* User Profile Dropdown */}
           <DropdownMenu>
