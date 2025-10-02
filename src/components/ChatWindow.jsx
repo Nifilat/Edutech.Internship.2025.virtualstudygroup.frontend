@@ -147,6 +147,19 @@ function ChatWindow({
         </div>
       </div>
 
+      {activeChat.isGroup && activeChat.pendingRequest && (
+        <div className="bg-orange-50 border-b border-orange-100 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-700">
+              <span className="font-medium">
+                {activeChat.pendingRequest.userName}
+              </span>{" "}
+              Requested to join
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (

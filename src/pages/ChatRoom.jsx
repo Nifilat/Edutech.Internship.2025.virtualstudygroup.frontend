@@ -59,10 +59,10 @@ const Chatroom = () => {
 
           // Transform API groups into chat objects with course info
           const transformed = groupsData.data
-            .filter((group) => group && group.id) // Filter out null/undefined groups
+            .filter((group) => group && group.id)
             .map((group) => {
               const course = coursesMap.get(group.course_id);
-              
+
               return {
                 id: group.id,
                 groupId: group.group_id,
@@ -77,6 +77,12 @@ const Chatroom = () => {
                 avatar: null,
                 isGroup: true,
                 unreadCount: 0,
+                // Add pending request if user is admin and there are pending requests
+                pendingRequest:
+                  group.created_by === user?.id &&
+                  group.pending_requests?.length > 0
+                    ? { userName: group.pending_requests[0].user_name }
+                    : null,
               };
             });
 
