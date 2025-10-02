@@ -7,15 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "./ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import NotificationDropdown from "./NotificationDropdown";
-import { studyGroupAPI } from "@/lib/api";
+import { notificationsAPI } from "@/lib/api";
 
 const Header = ({ pageTitle }) => {
   const { logout, getUser } = useAuth();
@@ -26,14 +22,12 @@ const Header = ({ pageTitle }) => {
 
   const fetchNotifications = async () => {
     try {
-      const data = await studyGroupAPI.getNotifications();
+      const data = await notificationsAPI.getNotifications();
       // Assuming the API returns { data: [...notifications] }
       const notifs = data?.data || [];
       setNotifications(notifs);
       // Count unread/pending notifications
-      const unread = notifs.filter(
-        (n) => n.status === "pending"
-      ).length;
+      const unread = notifs.filter((n) => n.status === "pending").length;
       setUnreadCount(unread);
     } catch (error) {
       console.error("Error fetching notifications:", error);
