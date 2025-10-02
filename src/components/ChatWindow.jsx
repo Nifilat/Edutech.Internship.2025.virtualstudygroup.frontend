@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import Picker from "emoji-mart"; // ✅ Changed import
+import Picker from "emoji-mart"; 
 import {
   UserGroup,
   AddTeam,
@@ -14,7 +14,7 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import GroupParticipantsPopup from "./GroupParticipantsPopup";
+import GroupParticipantsPopup from "./GroupParticpantPopup";
 
 function ChatWindow({
   activeChat,
