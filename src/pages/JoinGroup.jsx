@@ -5,14 +5,17 @@ import { Input } from "@/components/ui/Input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CreateGroup from "./CreateGroup";
 import JoinGroupPopup from "@/components/JoinGroupPopup";
-import { useStudyRoomsWithCourses } from "@/hooks/useStudyGroup";
+import { useStudyRoomsWithCourses, useJoinGroup } from "@/hooks/useStudyGroup";
+import { toast } from "sonner";
 
 const JoinGroup = ({ onCreateGroupClick }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showJoinPopup, setShowJoinPopup] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [joiningGroupId, setJoiningGroupId] = useState(null); // Track which group is being joined
 
   const { data: studyGroups, isLoading, error } = useStudyRoomsWithCourses();
+  const joinGroupMutation = useJoinGroup();
 
   const filteredGroups = studyGroups.filter(
     (group) =>
@@ -21,15 +24,29 @@ const JoinGroup = ({ onCreateGroupClick }) => {
       group.course_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleJoinRoom = (groupId) => {
-    setSelectedGroupId(groupId);
-    setShowJoinPopup(true);
+  const handleJoinRoom = async (groupId) => {
+    setJoiningGroupId(groupId); // Set the specific group being joined
+    try {
+      await joinGroupMutation.mutateAsync(groupId);
+      setSelectedGroupId(groupId);
+      setShowJoinPopup(true);
+      toast.success("Join request sent successfully!");
+    } catch (err) {
+      console.error("Error joining group:", err);
+      toast.error(
+        err.response?.data?.message ||
+          "Failed to send join request. Please try again."
+      );
+    } finally {
+      setJoiningGroupId(null); // Clear the joining state
+    }
   };
 
   const handleCancelRequest = () => {
     console.log("Cancelling request for group:", selectedGroupId);
     setShowJoinPopup(false);
     setSelectedGroupId(null);
+    toast.info("Request cancelled");
   };
 
   const handleClosePopup = () => {
@@ -65,7 +82,6 @@ const JoinGroup = ({ onCreateGroupClick }) => {
         </div>
 
         <TabsContent value="study-rooms" className="space-y-6 mt-6">
-          {/* Search Bar */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-gray-400" />
@@ -79,7 +95,6 @@ const JoinGroup = ({ onCreateGroupClick }) => {
             />
           </div>
 
-          {/* Loading State */}
           {isLoading && (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-orange-normal" />
@@ -87,7 +102,6 @@ const JoinGroup = ({ onCreateGroupClick }) => {
             </div>
           )}
 
-          {/* Error State */}
           {error && (
             <div className="text-center py-12">
               <p className="text-red-500">
@@ -96,7 +110,6 @@ const JoinGroup = ({ onCreateGroupClick }) => {
             </div>
           )}
 
-          {/* Study Groups List */}
           {!isLoading && !error && (
             <div className="space-y-4">
               {filteredGroups.map((group) => (
@@ -121,7 +134,7 @@ const JoinGroup = ({ onCreateGroupClick }) => {
                         {group.description}
                       </p>
                       <div className="flex items-center gap-4 text-xs text-gray-400">
-                        <span>Group ID: {group.group_id}</span>
+                        <span>ID: {group.id}</span>
                         <span>
                           Created:{" "}
                           {new Date(group.created_at).toLocaleDateString()}
@@ -130,10 +143,18 @@ const JoinGroup = ({ onCreateGroupClick }) => {
                     </div>
                     <div className="ml-6">
                       <Button
-                        onClick={() => handleJoinRoom(group.group_id)}
-                        className="bg-orange-normal hover:bg-orange-normal-hover text-white-normal px-5 py-3.5 rounded-lg"
+                        onClick={() => handleJoinRoom(group.id)}
+                        disabled={joiningGroupId === group.id}
+                        className="bg-orange-normal hover:bg-orange-normal-hover text-white-normal px-5 py-3.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Join Room
+                        {joiningGroupId === group.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Joining...
+                          </>
+                        ) : (
+                          "Join Room"
+                        )}
                       </Button>
                     </div>
                   </div>
