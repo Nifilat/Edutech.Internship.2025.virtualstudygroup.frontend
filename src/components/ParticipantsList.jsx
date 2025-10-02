@@ -2,54 +2,55 @@ import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { X, Plus, Search } from "lucide-react";
+import { useUsers, useParticipantSearch } from "@/hooks/useStudyGroup";
+import { toast } from "sonner";
 
-function ParticipantsList({
-  participants,
-  availableParticipants,
-  onParticipantsChange,
-  onClose,
-}) {
+function ParticipantsList({ participants, onParticipantsChange, onClose }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState([
     ...participants,
   ]);
   const [imageErrors, setImageErrors] = useState(new Set());
-  const [filteredParticipants, setFilteredParticipants] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
-  // 🔹 API call to search participants
+  // Debounce search query
   useEffect(() => {
-    const fetchParticipants = async () => {
-      if (!searchQuery.trim()) {
-        setFilteredParticipants(availableParticipants || []);
-        return;
-      }
-      setLoading(true);
-      try {
-        const res = await fetch(
-          `/api/study-groups/participants/search?query=${encodeURIComponent(
-            searchQuery
-          )}`
-        );
-        const data = await res.json();
-        if (res.ok) {
-          setFilteredParticipants(data?.data || []);
-        } else {
-          console.error("Search error:", data.message);
-          setFilteredParticipants([]);
-        }
-      } catch (err) {
-        console.error("Search failed:", err);
-        setFilteredParticipants([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
 
-    // 🔹 Debounce: wait 400ms after typing
-    const timeout = setTimeout(fetchParticipants, 400);
-    return () => clearTimeout(timeout);
-  }, [searchQuery, availableParticipants]);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Use search endpoint when there's a query, otherwise get all users
+  const {
+    data: usersData,
+    isLoading: usersLoading,
+    error: usersError,
+  } = useUsers();
+  const {
+    data: searchData,
+    isLoading: searchLoading,
+    error: searchError,
+  } = useParticipantSearch(debouncedSearchQuery);
+
+  // Determine which data to use
+  const isSearching = debouncedSearchQuery.trim().length > 0;
+  const displayData = isSearching ? searchData : usersData;
+  const isLoading = isSearching ? searchLoading : usersLoading;
+  const error = isSearching ? searchError : usersError;
+
+  useEffect(() => {
+    console.log("Display data:", displayData);
+    console.log("Loading:", isLoading);
+    console.log("Error:", error);
+  }, [displayData, isLoading, error]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error("Failed to load users. Please try again.");
+    }
+  }, [error]);
 
   const handleImageError = (participantId) => {
     setImageErrors((prev) => new Set([...prev, participantId]));
@@ -78,19 +79,17 @@ function ParticipantsList({
   };
 
   const renderAvatar = (participant, size = "w-12 h-12") => {
-    const initials = participant.name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
+    const initials = `${participant.first_name?.[0] || ""}${
+      participant.last_name?.[0] || ""
+    }`.toUpperCase();
     const hasValidAvatar =
-      participant.avatarUrl && !imageErrors.has(participant.id);
+      participant.avatar_url && !imageErrors.has(participant.id);
 
     if (hasValidAvatar) {
       return (
         <img
-          src={participant.avatarUrl}
-          alt={participant.name}
+          src={participant.avatar_url}
+          alt={`${participant.first_name} ${participant.last_name}`}
           className={`${size} rounded-full object-cover`}
           onError={() => handleImageError(participant.id)}
         />
@@ -129,7 +128,7 @@ function ParticipantsList({
                 key={participant.id}
                 className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1.5 text-sm font-medium text-gray-700"
               >
-                <span>{participant.name}</span>
+                <span>{`${participant.first_name} ${participant.last_name}`}</span>
                 <button
                   onClick={() => handleRemoveParticipant(participant.id)}
                   className="ml-1 hover:bg-gray-200 rounded-full p-0.5 transition-colors"
@@ -156,16 +155,25 @@ function ParticipantsList({
 
         {/* Participants List */}
         <div className="max-h-80 overflow-y-auto space-y-3 mb-6">
-          {loading ? (
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-normal mx-auto mb-2"></div>
+              <p className="text-sm text-gray-500">
+                {isSearching ? "Searching..." : "Loading users..."}
+              </p>
+            </div>
+          ) : displayData && displayData.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-8">
-              Searching...
+              {isSearching
+                ? "No users found matching your search"
+                : "No users found"}
             </p>
-          ) : filteredParticipants.length === 0 ? (
+          ) : !displayData ? (
             <p className="text-sm text-gray-500 text-center py-8">
-              No participants found
+              {error ? "Failed to load users" : "No users available"}
             </p>
           ) : (
-            filteredParticipants.map((participant) => {
+            displayData.map((participant) => {
               const isSelected = selectedParticipants.find(
                 (p) => p.id === participant.id
               );
@@ -179,10 +187,10 @@ function ParticipantsList({
                     {renderAvatar(participant)}
                     <div>
                       <p className="font-semibold text-gray-900 text-sm">
-                        {participant.name}
+                        {`${participant.first_name} ${participant.last_name}`}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {participant.username}
+                        {participant.email}
                       </p>
                     </div>
                   </div>
