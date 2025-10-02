@@ -69,6 +69,9 @@
   /* White Color Palette */
   --white-normal: #FCFCFC;
   --white-dark-active: #717171;
+
+  /* Gray Color Palette */
+  --grey-dark-active: #535353;
 }
 
 
@@ -127,6 +130,8 @@
 
   --color-white-normal: var(--white-normal);
   --color-white-dark-active: var(--white-dark-active);
+
+  --color-grey-dark-active: var(--grey-dark-active);
 }
 
 .dark {
