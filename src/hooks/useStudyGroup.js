@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { studyGroupAPI } from "@/lib/api";
 import { useMemo } from "react";
 
@@ -49,4 +49,15 @@ export const useStudyRoomsWithCourses = () => {
     isLoading: roomsLoading || coursesLoading,
     error: roomsError || coursesError,
   };
+};
+
+export const useJoinGroup = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (Id) => studyGroupAPI.joinGroup(Id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-groups"] });
+    },
+  });
 };
