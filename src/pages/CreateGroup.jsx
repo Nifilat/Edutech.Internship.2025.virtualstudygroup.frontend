@@ -163,7 +163,7 @@ const CreateGroup = ({ onGroupCreated }) => {
                   key={participant.id}
                   className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
                 >
-                  {participant.name}
+                  {participant.first_name} {participant.last_name}
                 </div>
               ))}
             </div>
@@ -194,7 +194,6 @@ const CreateGroup = ({ onGroupCreated }) => {
         <DialogContent className="max-w-md p-0 gap-0" showCloseButton={false}>
           <ParticipantsList
             participants={participants}
-            availableParticipants={participants}
             onParticipantsChange={handleParticipantsChange}
             onClose={() => setOpenModal(false)}
           />
