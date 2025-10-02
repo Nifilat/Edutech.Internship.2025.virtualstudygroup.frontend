@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Search, Users, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CreateGroup from "./CreateGroup";
 import JoinGroupPopup from "@/components/JoinGroupPopup";
@@ -12,7 +12,7 @@ const JoinGroup = ({ onCreateGroupClick }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showJoinPopup, setShowJoinPopup] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
-  const [joiningGroupId, setJoiningGroupId] = useState(null); // Track which group is being joined
+  const [joiningGroupId, setJoiningGroupId] = useState(null); 
 
   const { data: studyGroups, isLoading, error } = useStudyRoomsWithCourses();
   const joinGroupMutation = useJoinGroup();
@@ -25,7 +25,7 @@ const JoinGroup = ({ onCreateGroupClick }) => {
   );
 
   const handleJoinRoom = async (groupId) => {
-    setJoiningGroupId(groupId); // Set the specific group being joined
+    setJoiningGroupId(groupId); 
     try {
       await joinGroupMutation.mutateAsync(groupId);
       setSelectedGroupId(groupId);
