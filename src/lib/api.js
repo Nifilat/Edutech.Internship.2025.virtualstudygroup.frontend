@@ -57,3 +57,30 @@ export const authAPI = {
     return response.data;
   },
 };
+
+export const studyGroupAPI = {
+  create: async (groupData) => {
+    const response = await api.post("/study-groups/create", groupData);
+    return response.data;
+  },
+
+  getCourses: async () => {
+    const response = await api.get("/study-groups/getcourses");
+    return response.data;
+  },
+
+  getUserGroups: async () => {
+    const response = await api.get("/study-groups/getUserGroups");
+    return response.data;
+  },
+
+  getAllStudyRooms: async () => {
+    const response = await api.get("/study-rooms");
+    return response.data; 
+  },
+
+  joinGroup: async (groupId) => {
+    const response = await api.post(`/study-groups/${groupId}/join-request`);
+    return response.data;
+  },
+};

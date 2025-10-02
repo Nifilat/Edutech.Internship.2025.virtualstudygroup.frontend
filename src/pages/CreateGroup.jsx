@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,67 +11,63 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { mockParticipants } from "../data/participants";
-import { addStudyGroup } from "../data/studyGroup";
+import { studyGroupAPI } from "../lib/api";
 import ParticipantsList from "@/components/ParticipantsList";
 import { toast } from "sonner";
 import { Add } from "../components/icons";
 
-const CreateGroup = ({ onGroupCreated }) => { // Added prop
+const CreateGroup = ({ onGroupCreated }) => {
   const [groupName, setGroupName] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const [participants, setParticipants] = useState([]);
   const [openModal, setOpenModal] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const courses = [
-    "Criminal Law",
-    "Constitutional Law",
-    "Contract Law",
-    "Tort Law",
-    "Administrative Law",
-  ];
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setLoading(true);
+      try {
+        const data = await studyGroupAPI.getCourses();
+        setCourses(data);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        toast.error("Failed to load courses. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleCreateGroup = () => {
+    fetchCourses();
+  }, []);
+
+  const handleCreateGroup = async () => {
+    setLoading(true);
     try {
-      // Debug: Log before creating group
-      console.log('Creating group with data:', {
-        groupName,
-        selectedCourse,
-        groupDescription,
-        participants,
-      });
-
-      const newGroup = {
-        groupName,
-        selectedCourse,
-        groupDescription,
-        participants,
+      const payload = {
+        group_name: groupName,
+        course_id: selectedCourse,
+        description: groupDescription,
+        members: participants.map((p) => p.id),
       };
 
-      // Add the group to mock data
-      const createdGroup = addStudyGroup(newGroup);
-      console.log('Group created:', createdGroup);
+      console.log("Payload:", payload);
 
-      // Debug: Log before showing toast
-      console.log('About to show toast...');
-      
-      // Show toast BEFORE clearing form (in case form clearing affects anything)
-      toast.success('Group created successfully!');
-      
-      // Debug: Log after showing toast
-      console.log('Toast should have been shown');
+      const response = await studyGroupAPI.create(payload);
 
-      // Clear form
+      toast.success(response.message || "Group created successfully!");
       handleCancel();
 
       // Notify parent component if callback provided
       if (onGroupCreated) {
-        onGroupCreated(createdGroup);
+        onGroupCreated(response.group);
       }
     } catch (error) {
-      console.error('Error creating group:', error);
-      toast.error('Failed to create group. Please try again.');
+      console.error("Error creating group:", error);
+      toast.error("Failed to create group. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,10 +77,6 @@ const CreateGroup = ({ onGroupCreated }) => { // Added prop
     setGroupDescription("");
     setParticipants([]);
   };
-
-  const eligibleParticipants = mockParticipants.filter(
-    (p) => p.course === selectedCourse
-  );
 
   const handleParticipantsChange = (newParticipants) => {
     setParticipants(newParticipants);
@@ -131,15 +123,12 @@ const CreateGroup = ({ onGroupCreated }) => { // Added prop
               </Label>
               <Select value={selectedCourse} onValueChange={setSelectedCourse}>
                 <SelectTrigger className="w-full bg-white-normal border border-[#E9E9E9]">
-                  <SelectValue placeholder="Criminal Law" />
+                  <SelectValue placeholder="Select Course" />
                 </SelectTrigger>
                 <SelectContent>
                   {courses.map((course) => (
-                    <SelectItem
-                      key={course}
-                      value={course.toLowerCase().replace(" ", "-")}
-                    >
-                      {course}
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.course_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -195,7 +184,7 @@ const CreateGroup = ({ onGroupCreated }) => { // Added prop
             className="bg-orange-normal hover:bg-orange-dark text-white px-8"
             disabled={!groupName || !selectedCourse || !groupDescription}
           >
-            Create Group
+            {loading ? "Creating..." : "Create Group"}
           </Button>
         </div>
       </div>
@@ -205,13 +194,12 @@ const CreateGroup = ({ onGroupCreated }) => { // Added prop
         <DialogContent className="max-w-md p-0 gap-0" showCloseButton={false}>
           <ParticipantsList
             participants={participants}
-            availableParticipants={eligibleParticipants}
+            availableParticipants={participants}
             onParticipantsChange={handleParticipantsChange}
             onClose={() => setOpenModal(false)}
           />
         </DialogContent>
       </Dialog>
-
     </div>
   );
 };
