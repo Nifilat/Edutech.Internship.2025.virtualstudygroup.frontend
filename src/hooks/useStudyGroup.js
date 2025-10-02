@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { studyGroupAPI } from "@/lib/api";
+import { studyGroupAPI, userAPI } from "@/lib/api";
 import { useMemo } from "react";
 
 export const useStudyRooms = () => {
@@ -16,13 +16,19 @@ export const useCourses = () => {
   });
 };
 
-
 export const useStudyRoomsWithCourses = () => {
-  const { data: studyRoomsData, isLoading: roomsLoading, error: roomsError } = useStudyRooms();
-  const { data: coursesData, isLoading: coursesLoading, error: coursesError } = useCourses();
+  const {
+    data: studyRoomsData,
+    isLoading: roomsLoading,
+    error: roomsError,
+  } = useStudyRooms();
+  const {
+    data: coursesData,
+    isLoading: coursesLoading,
+    error: coursesError,
+  } = useCourses();
 
   const studyRoomsWithCourses = useMemo(() => {
-    
     if (!studyRoomsData?.data || !coursesData) {
       return [];
     }
@@ -51,6 +57,16 @@ export const useStudyRoomsWithCourses = () => {
   };
 };
 
+export const useParticipantSearch = (searchQuery) => {
+  return useQuery({
+    queryKey: ["participants-search", searchQuery],
+    queryFn: () => studyGroupAPI.searchParticipants(searchQuery),
+    enabled: !!searchQuery && searchQuery.trim().length > 0,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 2,
+  });
+};
+
 export const useJoinGroup = () => {
   const queryClient = useQueryClient();
 
@@ -59,5 +75,14 @@ export const useJoinGroup = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-groups"] });
     },
+  });
+};
+
+export const useUsers = () => {
+  return useQuery({
+    queryKey: ["users"],
+    queryFn: userAPI.getUsers,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
   });
 };

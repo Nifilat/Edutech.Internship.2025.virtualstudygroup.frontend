@@ -64,6 +64,13 @@ export const studyGroupAPI = {
     return response.data;
   },
 
+  searchParticipants: async (query) => {
+    const response = await api.post("/study-groups/participants/search", {
+      query: query,
+    });
+    return response.data;
+  },
+
   getCourses: async () => {
     const response = await api.get("/study-groups/getcourses");
     return response.data;
@@ -76,11 +83,34 @@ export const studyGroupAPI = {
 
   getAllStudyRooms: async () => {
     const response = await api.get("/study-rooms");
-    return response.data; 
+    return response.data;
   },
 
   joinGroup: async (groupId) => {
     const response = await api.post(`/study-groups/${groupId}/join-request`);
+    return response.data;
+  },
+
+  handleJoinRequest: async (groupId, requestData) => {
+    // requestData should contain { user_id: "...", action: "approve" or "reject" }
+    const response = await api.post(
+      `/study-groups/${groupId}/handle-request`,
+      requestData
+    );
+    return response.data;
+  },
+};
+
+export const notificationsAPI = {
+  getNotifications: async () => {
+    const response = await api.get("/notifications");
+    return response.data;
+  },
+};
+
+export const userAPI = {
+  getUsers: async () => {
+    const response = await api.get("/users");
     return response.data;
   },
 };
