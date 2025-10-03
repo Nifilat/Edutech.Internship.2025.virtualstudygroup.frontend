@@ -197,7 +197,7 @@ function ChatWindow({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {echoMessages && echoMessages.length > 0 ? (
           echoMessages.map((msg) => {
-            const isOwn = msg.user_id == user?.id; // Use == for type coercion since backend returns strings
+            const isOwn = msg.user_id == user?.id;
             const userName = msg.user
               ? `${msg.user.first_name} ${msg.user.last_name}`
               : "Unknown User";
@@ -236,11 +236,13 @@ function ChatWindow({
                       </p>
                     )}
                     <p className="text-sm font-normal">{msg.message}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(msg.created_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                    <p className="text-xs text-gray-400 mt-1">
+                      {msg.created_at
+                        ? new Date(msg.created_at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : ""}
                     </p>
                   </div>
                 </div>
@@ -267,11 +269,7 @@ function ChatWindow({
               aria-label="Add emoji"
               onClick={() => setShowEmojiPicker((v) => !v)}
             >
-              <img
-                src="/smile.png"
-                alt="Smile"
-                className="w-5 h-5"
-              />
+              <img src="/smile.png" alt="Smile" className="w-5 h-5" />
             </Button>
             {showEmojiPicker && (
               <div className="absolute z-50 bottom-12 left-0">
