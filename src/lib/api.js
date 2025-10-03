@@ -81,6 +81,11 @@ export const studyGroupAPI = {
     return response.data;
   },
 
+  getGroupDetails: async (groupId) => {
+    const response = await api.get(`/study-groups/${groupId}/details`);
+    return response.data;
+  },
+
   getAllStudyRooms: async () => {
     const response = await api.get("/study-rooms");
     return response.data;
