@@ -41,9 +41,6 @@ function ParticipantsList({ participants, onParticipantsChange, onClose }) {
   const error = isSearching ? searchError : usersError;
 
   useEffect(() => {
-    console.log("Display data:", displayData);
-    console.log("Loading:", isLoading);
-    console.log("Error:", error);
   }, [displayData, isLoading, error]);
 
   useEffect(() => {
