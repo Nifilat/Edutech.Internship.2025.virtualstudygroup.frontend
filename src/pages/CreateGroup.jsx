@@ -24,18 +24,38 @@ const CreateGroup = ({ onGroupCreated }) => {
   const [openModal, setOpenModal] = useState(false);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingCourses, setFetchingCourses] = useState(false);
 
   useEffect(() => {
     const fetchCourses = async () => {
-      setLoading(true);
+      setFetchingCourses(true);
       try {
         const data = await studyGroupAPI.getCourses();
-        setCourses(data);
+        console.log("Courses response:", data);
+
+        // Handle both response structures
+        const coursesList = Array.isArray(data) ? data : data?.data || [];
+        setCourses(coursesList);
+
+        if (coursesList.length === 0) {
+          toast.info("No courses available");
+        }
       } catch (error) {
         console.error("Error fetching courses:", error);
-        toast.error("Failed to load courses. Please try again.");
+
+        // Check if it's a 403 but data was still returned
+        if (error.response?.status === 403) {
+          toast.warning("Authorization issue, but courses were loaded");
+          // Try to extract data from error response
+          const coursesList = error.response?.data || [];
+          if (Array.isArray(coursesList) && coursesList.length > 0) {
+            setCourses(coursesList);
+          }
+        } else {
+          toast.error("Failed to load courses. Please try again.");
+        }
       } finally {
-        setLoading(false);
+        setFetchingCourses(false);
       }
     };
 
@@ -43,29 +63,36 @@ const CreateGroup = ({ onGroupCreated }) => {
   }, []);
 
   const handleCreateGroup = async () => {
+    if (!groupName.trim() || !selectedCourse || !groupDescription.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
-        group_name: groupName,
+        group_name: groupName.trim(),
         course_id: selectedCourse,
-        description: groupDescription,
+        description: groupDescription.trim(),
         members: participants.map((p) => p.id),
       };
 
-      console.log("Payload:", payload);
+      console.log("Create group payload:", payload);
 
       const response = await studyGroupAPI.create(payload);
 
       toast.success(response.message || "Group created successfully!");
       handleCancel();
 
-      // Notify parent component if callback provided
       if (onGroupCreated) {
-        onGroupCreated(response.group);
+        onGroupCreated(response.group || response.data);
       }
     } catch (error) {
       console.error("Error creating group:", error);
-      toast.error("Failed to create group. Please try again.");
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to create group. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -121,16 +148,30 @@ const CreateGroup = ({ onGroupCreated }) => {
               <Label htmlFor="select-course" className="text-sm font-medium">
                 Select Course <span className="text-red-500">*</span>
               </Label>
-              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+              <Select
+                value={selectedCourse}
+                onValueChange={setSelectedCourse}
+                disabled={fetchingCourses}
+              >
                 <SelectTrigger className="w-full bg-white-normal border border-[#E9E9E9]">
-                  <SelectValue placeholder="Select Course" />
+                  <SelectValue
+                    placeholder={
+                      fetchingCourses ? "Loading courses..." : "Select Course"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {courses.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.course_name}
-                    </SelectItem>
-                  ))}
+                  {courses.length > 0 ? (
+                    courses.map((course) => (
+                      <SelectItem key={course.id} value={course.id.toString()}>
+                        {course.course_code} - {course.course_name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-2 text-sm text-gray-500">
+                      No courses available
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -182,7 +223,9 @@ const CreateGroup = ({ onGroupCreated }) => {
           <Button
             onClick={handleCreateGroup}
             className="bg-orange-normal hover:bg-orange-dark text-white px-8"
-            disabled={!groupName || !selectedCourse || !groupDescription}
+            disabled={
+              !groupName || !selectedCourse || !groupDescription || loading
+            }
           >
             {loading ? "Creating..." : "Create Group"}
           </Button>
