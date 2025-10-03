@@ -6,6 +6,7 @@ import { studyGroupAPI, chatAPI } from "../lib/api";
 import { useLaravelEcho } from "@/hooks/useLaravelEcho";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { formatMessageTime } from "../lib/formatMessageTime";
 
 const Chatroom = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,7 +24,7 @@ const Chatroom = () => {
     setMessages,
   } = useLaravelEcho(selectedChat?.id);
 
-  // Fetch user's study groups
+  // 🔹 Fetch user's study groups
   useEffect(() => {
     const fetchGroups = async () => {
       setLoadingChats(true);
@@ -50,19 +51,24 @@ const Chatroom = () => {
                 courseCode: course?.course_code || `COURSE ${group.course_id}`,
                 courseName: course?.course_name || "",
                 lastMessage: group.description || "Start chatting...",
-                time: new Date(group.updated_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
+                time: formatMessageTime(group.updated_at),
                 avatar: null,
                 isGroup: true,
-                unreadCount: 0,
+                unreadCount: group.unread_count || 0,
                 pendingRequest:
                   group.created_by === user?.id &&
                   group.pending_requests?.length > 0
                     ? { userName: group.pending_requests[0].user_name }
                     : null,
               };
+            })
+            .sort((a, b) => {
+              // 1️⃣ If either has unread, sort unread first
+              if (b.unreadCount !== a.unreadCount) {
+                return b.unreadCount - a.unreadCount;
+              }
+              // 2️⃣ Otherwise sort by most recent update
+              return new Date(b.time) - new Date(a.time);
             });
 
           setChats(transformed);
@@ -80,15 +86,22 @@ const Chatroom = () => {
     fetchGroups();
   }, [user?.id]);
 
-  // Fetch messages when chat changes
+  // 🔹 Fetch messages whenever selectedChat changes
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedChat?.id) return;
 
       try {
         const data = await chatAPI.getMessages(selectedChat.id);
-        // Reverse to show oldest messages first
-        setMessages(data ? [...data].reverse() : []);
+
+        // Ensure messages are properly formatted
+        const formatted = (data || []).map((msg) => ({
+          ...msg,
+          created_at: new Date(msg.created_at).toISOString(), // safe string
+        }));
+
+        // Oldest first
+        setMessages([...formatted].reverse());
       } catch (err) {
         console.error("Error fetching messages:", err);
         toast.error("Failed to load messages");
@@ -98,6 +111,7 @@ const Chatroom = () => {
     fetchMessages();
   }, [selectedChat?.id, setMessages]);
 
+  // 🔹 Handle send message
   const handleSendMessage = async (messageText) => {
     if (!selectedChat?.id) return;
 
@@ -110,8 +124,11 @@ const Chatroom = () => {
           user_id: user?.id,
           user_name: `${user?.first_name} ${user?.last_name}`,
           user_avatar: user?.avatar_url,
+          created_at: new Date().toISOString(),
         };
-        setMessages((prev) => [...prev, newMessage]); // optimistic update
+
+        // Optimistic update so message shows immediately
+        setMessages((prev) => [...prev, newMessage]);
       }
     } catch (error) {
       console.error("Error sending message:", error);
