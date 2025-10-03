@@ -91,10 +91,9 @@ export const studyGroupAPI = {
     return response.data;
   },
 
-  handleJoinRequest: async (groupId, requestData) => {
-    // requestData should contain { user_id: "...", action: "approve" or "reject" }
+  handleJoinRequest: async (requestId, requestData) => {
     const response = await api.post(
-      `/study-groups/${groupId}/handle-request`,
+      `/study-groups/${requestId}/handle-request`,
       requestData
     );
     return response.data;
