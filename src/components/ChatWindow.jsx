@@ -268,7 +268,7 @@ function ChatWindow({
               onClick={() => setShowEmojiPicker((v) => !v)}
             >
               <img
-                src="src/components/icons/smile.png"
+                src="/smile.png"
                 alt="Smile"
                 className="w-5 h-5"
               />
