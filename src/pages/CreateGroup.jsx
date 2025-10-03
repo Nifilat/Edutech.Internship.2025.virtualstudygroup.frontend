@@ -63,8 +63,15 @@ const CreateGroup = ({ onGroupCreated }) => {
   }, []);
 
   const handleCreateGroup = async () => {
-    if (!groupName.trim() || !selectedCourse || !groupDescription.trim()) {
-      toast.error("Please fill in all required fields");
+    if (
+      !groupName.trim() ||
+      !selectedCourse ||
+      !groupDescription.trim() ||
+      participants.length === 0 // 👈 must have at least one participant
+    ) {
+      toast.error(
+        "Please fill in all required fields and add at least one participant"
+      );
       return;
     }
 
@@ -224,7 +231,11 @@ const CreateGroup = ({ onGroupCreated }) => {
             onClick={handleCreateGroup}
             className="bg-orange-normal hover:bg-orange-dark text-white px-8"
             disabled={
-              !groupName || !selectedCourse || !groupDescription || loading
+              !groupName ||
+              !selectedCourse ||
+              !groupDescription ||
+              participants.length === 0 ||
+              loading
             }
           >
             {loading ? "Creating..." : "Create Group"}
