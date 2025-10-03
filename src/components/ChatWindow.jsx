@@ -349,7 +349,7 @@ function ChatWindow({
       <GroupParticipantsPopup
         isOpen={showParticipantsPopup}
         onClose={() => setShowParticipantsPopup(false)}
-        groupName={activeChat?.name}
+        groupId={activeChat?.id}
       />
     </div>
   );
