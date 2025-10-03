@@ -38,11 +38,11 @@ function ChatListItem({ chat, isActive, onClick }) {
         {renderChatAvatar()}
         <div className="ml-3 flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-900 truncate">
+            <h3 className="text-base font-semibold text-black-normal truncate">
               {chat.name}
             </h3>
-            <span className="text-xs text-gray-500 ml-2">
-              {chat.time}
+            <span className="text-[9px] font-medium text-orange-normal ml-2">
+              {(chat.time).toUpperCase()}
             </span>
           </div>
           <p className="text-sm text-gray-500 truncate mt-1">
