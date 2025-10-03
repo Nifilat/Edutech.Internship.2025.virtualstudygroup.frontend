@@ -11,13 +11,9 @@ export const useLaravelEcho = (groupId) => {
 
   useEffect(() => {
     if (!groupId) return;
-    if (echoRef.current) {
-      // leave any existing channel before creating a new one
-      echoRef.current.leave(`group.${groupId}`);
-    }
 
+    // ✅ initialize Echo only once
     if (!echoRef.current) {
-      // Initialize Laravel Echo with Pusher (Reverb)
       echoRef.current = new Echo({
         broadcaster: "pusher",
         key: "ediify-key",
@@ -29,16 +25,32 @@ export const useLaravelEcho = (groupId) => {
         disableStats: true,
         enabledTransports: ["ws", "wss"],
       });
+
+      // connection state listeners
+      echoRef.current.connector.pusher.connection.bind("connected", () => {
+        console.log("Pusher connected");
+        setIsConnected(true);
+      });
+      echoRef.current.connector.pusher.connection.bind("disconnected", () => {
+        console.log("Pusher disconnected");
+        setIsConnected(false);
+      });
+      echoRef.current.connector.pusher.connection.bind("error", (error) => {
+        console.error("Pusher connection error:", error);
+        setIsConnected(false);
+      });
     }
 
-    // Subscribe to the group channel (not private)
+    // ✅ unsubscribe from previous group channel
+    echoRef.current.leave(`group.${groupId}`);
+
+    // ✅ subscribe to the new group channel
     const channel = echoRef.current.channel(`group.${groupId}`);
 
     channel
       .listen("GroupMessageSent", (event) => {
         console.log("New message received:", event);
 
-        // Format message based on backend structure
         const formattedMessage = {
           id: event.message?.id || event.id,
           group_id: event.message?.group_id || event.group_id,
@@ -52,35 +64,15 @@ export const useLaravelEcho = (groupId) => {
         setMessages((prev) => [...prev, formattedMessage]);
       })
       .subscribed(() => {
-        console.log(`Subscribed to group.${groupId}`);
-        setIsConnected(true);
+        console.log(`✅ Subscribed to group.${groupId}`);
       })
       .error((error) => {
         console.error("Channel subscription error:", error);
-        setIsConnected(false);
       });
 
-    // Pusher connection events
-    echoRef.current.connector.pusher.connection.bind("connected", () => {
-      console.log("Pusher connected");
-      setIsConnected(true);
-    });
-
-    echoRef.current.connector.pusher.connection.bind("disconnected", () => {
-      console.log("Pusher disconnected");
-      setIsConnected(false);
-    });
-
-    echoRef.current.connector.pusher.connection.bind("error", (error) => {
-      console.error("Pusher connection error:", error);
-      setIsConnected(false);
-    });
-
     return () => {
-      if (echoRef.current) {
-        echoRef.current.leave(`group.${groupId}`);
-        echoRef.current.disconnect();
-      }
+      // ❌ don't disconnect the whole Echo here
+      echoRef.current.leave(`group.${groupId}`);
     };
   }, [groupId]);
 
