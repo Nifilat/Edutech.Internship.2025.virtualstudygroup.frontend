@@ -2,15 +2,22 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
-import { UserPlus, Link, LogOut } from "lucide-react";
+import { UserPlus, Link, LogOut, ChevronRight } from "lucide-react";
 import { studyGroupAPI } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { Loader as Loader2 } from "lucide-react";
 import ParticipantsList from "./ParticipantsList";
+import MemberActionsPopup from "./MemberActionsPopup";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openAddModal, setOpenAddModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const { getUser } = useAuth();
+  const user = getUser();
 
   useEffect(() => {
     if (!groupId || !isOpen) return;
@@ -30,11 +37,15 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
 
         const formatted = sortedMembers.map((m) => ({
           id: m.user.id,
+          first_name: m.user.first_name,
+          last_name: m.user.last_name,
           name: `${m.user.first_name} ${m.user.last_name}`,
           avatar: m.user.avatar_url,
           role: m.role,
         }));
 
+        const currentMember = formatted.find((m) => m.id === user?.id);
+        setCurrentUserRole(currentMember?.role || null);
         setParticipants(formatted);
       } catch (err) {
         console.error("Error fetching group details:", err);
@@ -59,39 +70,57 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
             </div>
 
             {/* Participants List */}
-            <div className="max-h-80 overflow-y-auto">
+            <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 400px)", minHeight: "200px" }}>
               {loading ? (
                 <div className="flex justify-center items-center py-6">
                   <Loader2 className="w-6 h-6 animate-spin text-orange-normal" />
                 </div>
               ) : (
-                participants.map((participant) => (
-                  <div
-                    key={participant.id}
-                    className="flex items-center p-3 hover:bg-gray-50"
-                  >
-                    <Avatar className="w-10 h-10 mr-3">
-                      <AvatarImage
-                        src={participant.avatar}
-                        alt={participant.name}
-                      />
-                      <AvatarFallback className="bg-orange-200 text-orange-800 text-sm">
-                        {participant.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex justify-between w-full">
-                      <span className="text-base font-medium text-black-normal">
-                        {participant.name}
-                      </span>
-                      <span className="text-[10px] text-black-normal font-medium">
-                        {participant.role}
-                      </span>
+                participants.map((participant) => {
+                  const isAdmin = currentUserRole === "Leader" || currentUserRole === "Admin";
+                  const canManage = isAdmin && participant.role !== "Leader" && participant.id !== user?.id;
+
+                  return (
+                    <div
+                      key={participant.id}
+                      className="flex items-center p-3 hover:bg-gray-50"
+                    >
+                      <Avatar className="w-10 h-10 mr-3">
+                        <AvatarImage
+                          src={participant.avatar}
+                          alt={participant.name}
+                        />
+                        <AvatarFallback className="bg-orange-200 text-orange-800 text-sm">
+                          {participant?.name
+                            ? participant.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                            : (participant?.first_name?.[0] || "") + (participant?.last_name?.[0] || "")}
+                        </AvatarFallback>
+
+                      </Avatar>
+                      <div className="flex justify-between w-full items-center">
+                        <span className="text-base font-medium text-black-normal">
+                          {participant.name}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-black-normal font-medium">
+                            {participant.role}
+                          </span>
+                          {canManage && (
+                            <button
+                              onClick={() => setSelectedMember(participant)}
+                              className="p-1 hover:bg-gray-200 rounded transition-colors"
+                            >
+                              <ChevronRight className="w-4 h-4 text-gray-600" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -130,21 +159,32 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
         <Dialog open={openAddModal} onOpenChange={setOpenAddModal}>
           <DialogContent showCloseButton={false} className="max-w-md p-0">
             <ParticipantsList
-              participants={participants.map((p) => {
-                const [first, last = ""] = (p.name || "").split(" ");
-                return {
-                  id: p.id,
-                  first_name: first,
-                  last_name: last,
-                  avatar_url: p.avatar,
-                };
-              })}
+              participants={participants.map((p) => ({
+                id: p.id,
+                first_name: p.first_name || "",
+                last_name: p.last_name || "",
+                avatar_url: p.avatar,
+              }))}
               onParticipantsChange={(newList) => setParticipants(newList)}
               onClose={() => setOpenAddModal(false)}
             />
           </DialogContent>
         </Dialog>
       )}
+
+      <MemberActionsPopup
+        isOpen={!!selectedMember}
+        onClose={() => setSelectedMember(null)}
+        member={selectedMember}
+        onMakeAdmin={() => {
+          toast.success(`${selectedMember?.name} is now an admin`);
+          setSelectedMember(null);
+        }}
+        onRemoveMember={() => {
+          toast.success(`${selectedMember?.name} has been removed from the group`);
+          setSelectedMember(null);
+        }}
+      />
     </>
   );
 };
