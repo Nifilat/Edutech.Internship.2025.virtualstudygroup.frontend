@@ -23,11 +23,11 @@ const Header = ({ pageTitle }) => {
   const fetchNotifications = async () => {
     try {
       const data = await notificationsAPI.getNotifications();
-      // Assuming the API returns { data: [...notifications] }
       const notifs = data?.data || [];
       setNotifications(notifs);
-      // Count unread/pending notifications
-      const unread = notifs.filter((n) => n.status === "pending").length;
+
+      // Count unread notifications
+      const unread = notifs.filter((n) => !n.read_at).length;
       setUnreadCount(unread);
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -36,13 +36,16 @@ const Header = ({ pageTitle }) => {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const handleNotificationHandled = () => {
     fetchNotifications();
+  };
+
+  const handleCloseNotifications = () => {
+    setNotificationOpen(false);
   };
 
   const handleLogout = () => {
@@ -59,12 +62,10 @@ const Header = ({ pageTitle }) => {
         </div>
 
         <div className="flex items-center space-x-4">
-          {/* Settings Button */}
           <Button variant="ghost" size="icon">
             <Settings className="w-5 h-5" />
           </Button>
 
-          {/* Notifications Button with Popover */}
           <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
@@ -76,15 +77,15 @@ const Header = ({ pageTitle }) => {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="end">
+            <PopoverContent className="w-[368px] p-0" align="end">
               <NotificationDropdown
                 notifications={notifications}
                 onNotificationHandled={handleNotificationHandled}
+                onClose={handleCloseNotifications}
               />
             </PopoverContent>
           </Popover>
 
-          {/* User Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -116,8 +117,6 @@ const Header = ({ pageTitle }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Help</DropdownMenuItem>
               <DropdownMenuItem onClick={handleLogout}>
                 Sign out
               </DropdownMenuItem>
