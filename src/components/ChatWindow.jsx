@@ -17,7 +17,7 @@ import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import GroupParticipantsPopup from "./GroupParticpantPopup";
 import { useAuth } from "@/hooks/useAuth";
-import { chatAPI } from "@/lib/api";
+import { studyGroupAPI } from "@/lib/api"; // ✅ import the same API used in ParticipantsList
 import { toast } from "sonner";
 
 function ChatWindow({
@@ -30,14 +30,29 @@ function ChatWindow({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showParticipantsPopup, setShowParticipantsPopup] = useState(false);
   const [sending, setSending] = useState(false);
+  const [participantsCount, setParticipantsCount] = useState(0); // ✅ replaced dummy data
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const { getUser } = useAuth();
   const user = getUser();
 
-  const participantsCount = 20;
+  // ✅ Fetch participant count when chat changes
+  useEffect(() => {
+    const fetchParticipantsCount = async () => {
+      if (!activeChat?.id || !activeChat.isGroup) return;
+      try {
+        const { data } = await studyGroupAPI.getGroupDetails(activeChat.id);
+        const members = data?.members || [];
+        setParticipantsCount(members.length);
+      } catch (error) {
+        console.error("Failed to fetch participants count:", error);
+      }
+    };
 
-  // Auto-scroll to bottom
+    fetchParticipantsCount();
+  }, [activeChat]);
+
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [echoMessages]);
@@ -101,17 +116,15 @@ function ChatWindow({
     }
 
     return (
-      <div className="relative">
-        <Avatar className="w-12 h-12">
-          <AvatarImage src={activeChat.avatar} alt={activeChat.name} />
-          <AvatarFallback className="bg-orange-200 text-orange-800">
-            {activeChat.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}
-          </AvatarFallback>
-        </Avatar>
-      </div>
+      <Avatar className="w-12 h-12">
+        <AvatarImage src={activeChat.avatar} alt={activeChat.name} />
+        <AvatarFallback className="bg-orange-200 text-orange-800">
+          {activeChat.name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")}
+        </AvatarFallback>
+      </Avatar>
     );
   };
 
@@ -138,6 +151,8 @@ function ChatWindow({
             </div>
           </div>
         </div>
+
+        {/* ✅ Live participant count */}
         <div className="flex items-center space-x-2">
           <Button
             variant="ghost"
@@ -145,37 +160,23 @@ function ChatWindow({
             className="text-orange-normal hover:text-orange-dark relative"
             onClick={() => setShowParticipantsPopup(true)}
           >
-            <AddTeam className="" />
-            <div className="absolute top-1 right-1 bg-orange-normal text-white text-[6px] rounded-full w-3 h-3 flex items-center justify-center font-medium">
-              {participantsCount}
-            </div>
+            <AddTeam />
+            {activeChat.isGroup && (
+              <div className="absolute top-1 right-1 bg-orange-normal text-white text-[6px] rounded-full w-3 h-3 flex items-center justify-center font-medium">
+                {participantsCount}
+              </div>
+            )}
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-orange-normal hover:text-orange-dark"
-          >
+          <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
             <Phone className="w-5 h-5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-orange-normal hover:text-orange-dark"
-          >
+          <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
             <Video className="w-5 h-5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-orange-normal hover:text-orange-dark"
-          >
+          <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
             <Search className="w-5 h-5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-orange-normal hover:text-orange-dark"
-          >
+          <Button variant="ghost" size="icon" className="text-orange-normal hover:text-orange-dark">
             <MoreHorizontal className="w-5 h-5" />
           </Button>
         </div>
@@ -209,9 +210,8 @@ function ChatWindow({
                 className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`flex max-w-xs lg:max-w-md ${
-                    isOwn ? "flex-row-reverse" : "flex-row"
-                  }`}
+                  className={`flex max-w-xs lg:max-w-md ${isOwn ? "flex-row-reverse" : "flex-row"
+                    }`}
                 >
                   {!isOwn && (
                     <Avatar className="w-8 h-8 mr-2">
@@ -224,11 +224,10 @@ function ChatWindow({
                     </Avatar>
                   )}
                   <div
-                    className={`px-4 py-2 rounded-lg ${
-                      isOwn
+                    className={`px-4 py-2 rounded-lg ${isOwn
                         ? "bg-orange-light text-black-normal rounded-br-none"
                         : "bg-orange-light text-black-normal rounded-bl-none"
-                    }`}
+                      }`}
                   >
                     {!isOwn && (
                       <p className="text-xs text-gray-600 mb-1 font-medium">
@@ -239,9 +238,9 @@ function ChatWindow({
                     <p className="text-xs text-gray-400 mt-1">
                       {msg.created_at
                         ? new Date(msg.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
                         : ""}
                     </p>
                   </div>
