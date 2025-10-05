@@ -52,6 +52,7 @@
 
   /* Orange Color Palette */
   --orange-light: #FBEEEB;
+  --orange-light-active: #F2CBC1;
   --orange-normal: #D45738;
   --orange-normal-hover: #BF4E32;
   --orange-normal-active: #AA462D;
@@ -115,6 +116,7 @@
 
   /* Custom Color Variables */
   --color-orange-light: var(--orange-light);
+  --color-orange-light-active: var(--orange-light-active);
   --color-orange-normal: var(--orange-normal);
   --color-orange-normal-hover: var(--orange-normal-hover);
   --color-orange-normal-active: var(--orange-normal-active);
