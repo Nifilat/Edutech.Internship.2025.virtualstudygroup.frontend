@@ -61,16 +61,16 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-sm p-0 gap-0" showCloseButton={false}>
-          <div className="bg-white rounded-lg">
+          <div className="bg-white rounded-4xl">
             {/* Header */}
-            <div className="p-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">
+            <div className="p-4 mt-9 border-b border-gray-100">
+              <h2 className="text-base font-semibold text-black-normal">
                 course mates ({participants.length})
               </h2>
             </div>
 
             {/* Participants List */}
-            <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 400px)", minHeight: "200px" }}>
+            <div className="overflow-y-auto space-y-[20px]" style={{ maxHeight: "calc(100vh - 400px)", minHeight: "200px" }}>
               {loading ? (
                 <div className="flex justify-center items-center py-6">
                   <Loader2 className="w-6 h-6 animate-spin text-orange-normal" />
@@ -83,40 +83,42 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
                   return (
                     <div
                       key={participant.id}
-                      className="flex items-center p-3 hover:bg-gray-50"
+                      className="flex items-center justify-between h-10 hover:bg-orange-light-hover px-4 rounded-[5px] transition-colors"
                     >
-                      <Avatar className="w-10 h-10 mr-3">
-                        <AvatarImage
-                          src={participant.avatar}
-                          alt={participant.name}
-                        />
-                        <AvatarFallback className="bg-orange-200 text-orange-800 text-sm">
-                          {participant?.name
-                            ? participant.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                            : (participant?.first_name?.[0] || "") + (participant?.last_name?.[0] || "")}
-                        </AvatarFallback>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-7.5 h-7.5 rounded-full border">
+                          <AvatarImage src={participant.avatar} alt={participant.name} />
+                          <AvatarFallback className="bg-orange-200 text-orange-800 text-sm">
+                            {participant?.name
+                              ? participant.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                              : (participant?.first_name?.[0] || "") +
+                              (participant?.last_name?.[0] || "")}
+                          </AvatarFallback>
+                        </Avatar>
 
-                      </Avatar>
-                      <div className="flex justify-between w-full items-center">
                         <span className="text-base font-medium text-black-normal">
                           {participant.name}
                         </span>
-                        <div className="flex items-center gap-2">
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {["Leader", "Admin"].includes(participant.role) && (
                           <span className="text-[10px] text-black-normal font-medium">
                             {participant.role}
                           </span>
-                          {canManage && (
-                            <button
-                              onClick={() => setSelectedMember(participant)}
-                              className="p-1 hover:bg-gray-200 rounded transition-colors"
-                            >
-                              <ChevronRight className="w-4 h-4 text-gray-600" />
-                            </button>
-                          )}
-                        </div>
+                        )}
+
+                        {canManage && (
+                          <button
+                            onClick={() => setSelectedMember(participant)}
+                            className="p-1 rounded transition-colors"
+                          >
+                            <ChevronRight className="w-5 h-4 text-black-normal cursor-pointer" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
