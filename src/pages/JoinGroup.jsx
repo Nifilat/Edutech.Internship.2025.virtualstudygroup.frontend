@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CreateGroup from "./CreateGroup";
 import JoinGroupPopup from "@/components/JoinGroupPopup";
+import { useAuth } from "../hooks/useAuth";
 import { useStudyRoomsWithCourses, useJoinGroup } from "@/hooks/useStudyGroup";
 import { toast } from "sonner";
 
@@ -12,20 +13,25 @@ const JoinGroup = ({ onCreateGroupClick }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showJoinPopup, setShowJoinPopup] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
-  const [joiningGroupId, setJoiningGroupId] = useState(null); 
+  const [joiningGroupId, setJoiningGroupId] = useState(null);
+
+  const { getUser } = useAuth();
+  const user = getUser();
 
   const { data: studyGroups, isLoading, error } = useStudyRoomsWithCourses();
   const joinGroupMutation = useJoinGroup();
 
-  const filteredGroups = studyGroups.filter(
-    (group) =>
-      group.group_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.course_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredGroups = studyGroups
+    ?.filter((group) => Number(group.created_by) !== Number(user?.id)) // ✅ exclude groups you created
+    ?.filter(
+      (group) =>
+        group.group_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        group.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        group.course_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   const handleJoinRoom = async (groupId) => {
-    setJoiningGroupId(groupId); 
+    setJoiningGroupId(groupId);
     try {
       await joinGroupMutation.mutateAsync(groupId);
       setSelectedGroupId(groupId);
