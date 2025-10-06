@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Check, User, Bell } from "lucide-react";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { toast } from "sonner";
 import { studyGroupAPI } from "@/lib/api";
 import { ArrowLeft } from "./icons";
+import { useAuth } from "@/hooks/useAuth";
 
 const NotificationDropdown = ({
   notifications,
@@ -13,15 +14,30 @@ const NotificationDropdown = ({
 }) => {
   const [processingRequests, setProcessingRequests] = useState(new Set());
   const [handledRequests, setHandledRequests] = useState(new Map());
+  const [userGroups, setUserGroups] = useState([]);
 
-  // Filter by status - only show pending join requests
+  const { getUser } = useAuth();
+  const user = getUser();
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const groups = await studyGroupAPI.getUserGroups();
+        setUserGroups(groups?.data || []);
+      } catch (err) {
+        console.error("Error fetching user groups:", err);
+      }
+    };
+    fetchGroups();
+  }, []);
+
+  // Filter only join requests
   const pendingRequests = notifications.filter(
     (notif) =>
       notif.type === "App\\Notifications\\JoinRequestNotification" &&
       notif.data.status === "pending"
   );
 
-  // Show approved/rejected requests
   const handledRequestsList = notifications.filter(
     (notif) =>
       notif.type === "App\\Notifications\\JoinRequestNotification" &&
@@ -37,12 +53,31 @@ const NotificationDropdown = ({
     const requestKey = `${notification.data.group_id}-${notification.data.user_id}`;
     if (processingRequests.has(requestKey)) return;
 
+
+    const group = userGroups.find(
+      (g) => Number(g.id) === Number(notification.data.group_id)
+    );
+
+    // ✅ Only restrict non-creators
+    if (!group) {
+      toast.error("Group not found.");
+      return;
+    }
+
+    if (Number(group.created_by) !== Number(user.id)) {
+      toast.error("Only the group creator can handle this request.");
+      return;
+    }
+
     setProcessingRequests((prev) => new Set(prev).add(requestKey));
 
     try {
-      await studyGroupAPI.handleJoinRequest(notification.data.request_id, {
-        action,
-      });
+      const response = await studyGroupAPI.handleJoinRequest(
+        notification.data.request_id,
+        {
+          action,
+        }
+      );
 
       setHandledRequests((prev) => new Map(prev).set(requestKey, action));
 
@@ -56,7 +91,7 @@ const NotificationDropdown = ({
         setTimeout(() => onNotificationHandled(), 500);
       }
     } catch (error) {
-      console.error(`Error ${action}ing request:`, error);
+      console.error(`❌ Error ${action}ing request:`, error);
 
       if (error.response?.status === 401 || error.response?.status === 403) {
         toast.error(
@@ -81,13 +116,11 @@ const NotificationDropdown = ({
   const hasPendingRequests = pendingRequests.length > 0;
   const hasHandledRequests = handledRequestsList.length > 0;
   const hasStatusNotifications = statusNotifications.length > 0;
-  const hasAnyNotifications =
-    hasPendingRequests || hasHandledRequests || hasStatusNotifications;
 
   return (
     <div className="w-[368px] bg-white rounded-lg p-6">
-      {/* Header with Back Arrow and Title */}
-      <div className=" border-b flex items-center gap-3">
+      {/* Header */}
+      <div className="border-b flex items-center gap-3">
         {onClose && (
           <Button
             variant="ghost"
@@ -95,7 +128,7 @@ const NotificationDropdown = ({
             onClick={onClose}
             className="h-8 w-8 hover:bg-gray-100"
           >
-            <ArrowLeft className="" />
+            <ArrowLeft />
           </Button>
         )}
         <h3 className="text-lg font-semibold text-black-normal">
@@ -103,7 +136,7 @@ const NotificationDropdown = ({
         </h3>
       </div>
 
-      {/* Pending Requests Section */}
+      {/* Pending Requests */}
       {hasPendingRequests && (
         <div className="border-b">
           <div className="px-4 pt-4 pb-2">
@@ -115,21 +148,18 @@ const NotificationDropdown = ({
               From Invite Link
             </p>
           </div>
+
           <div className="px-4 pb-4 space-y-3">
             {pendingRequests.map((notification) => {
               const requestKey = `${notification.data.group_id}-${notification.data.user_id}`;
               const isProcessing = processingRequests.has(requestKey);
               const handledStatus = handledRequests.get(requestKey);
-              const isUnread = !notification.read_at;
 
               return (
                 <div
                   key={notification.id}
                   className="flex items-center justify-between relative"
                 >
-                  {/* {isUnread && (
-                    <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-2 h-2 bg-orange-normal rounded-full"></div>
-                  )} */}
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Avatar className="w-10 h-10 flex-shrink-0">
                       {notification.data.user_avatar ? (
