@@ -56,7 +56,7 @@ const Chatroom = () => {
                 isGroup: true,
                 unreadCount: group.unread_count || 0,
                 pendingRequest:
-                  group.created_by === user?.id &&
+                  Number(group.created_by) === Number(user?.id) &&
                   group.pending_requests?.length > 0
                     ? { userName: group.pending_requests[0].user_name }
                     : null,
