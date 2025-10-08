@@ -17,20 +17,22 @@ import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import GroupParticipantsPopup from "./GroupParticpantPopup";
 import { useAuth } from "@/hooks/useAuth";
-import { studyGroupAPI } from "@/lib/api"; // ✅ import the same API used in ParticipantsList
+import { studyGroupAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 function ChatWindow({
   activeChat,
   echoMessages,
   isEchoConnected,
+  isLoadingMessages,
   onSendMessage,
 }) {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showParticipantsPopup, setShowParticipantsPopup] = useState(false);
   const [sending, setSending] = useState(false);
-  const [participantsCount, setParticipantsCount] = useState(0); // ✅ replaced dummy data
+  const [participantsCount, setParticipantsCount] = useState(0);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const { getUser } = useAuth();
@@ -52,7 +54,7 @@ function ChatWindow({
     fetchParticipantsCount();
   }, [activeChat]);
 
-  // Auto-scroll to bottom when new messages arrive
+  // ✅ Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [echoMessages]);
@@ -72,10 +74,11 @@ function ChatWindow({
 
     try {
       await onSendMessage(messageText);
+      // ✅ Message will appear via WebSocket, no manual update needed
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
-      setMessage(messageText);
+      setMessage(messageText); // Restore message on error
     } finally {
       setSending(false);
     }
@@ -196,7 +199,11 @@ function ChatWindow({
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {echoMessages && echoMessages.length > 0 ? (
+        {isLoadingMessages ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-8 h-8 animate-spin text-orange-normal" />
+          </div>
+        ) : echoMessages && echoMessages.length > 0 ? (
           echoMessages.map((msg) => {
             const isOwn = msg.user_id == user?.id;
             const userName = msg.user
@@ -210,8 +217,9 @@ function ChatWindow({
                 className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`flex max-w-xs lg:max-w-md ${isOwn ? "flex-row-reverse" : "flex-row"
-                    }`}
+                  className={`flex max-w-xs lg:max-w-md ${
+                    isOwn ? "flex-row-reverse" : "flex-row"
+                  }`}
                 >
                   {!isOwn && (
                     <Avatar className="w-8 h-8 mr-2">
@@ -224,10 +232,11 @@ function ChatWindow({
                     </Avatar>
                   )}
                   <div
-                    className={`px-4 py-2 rounded-lg ${isOwn
+                    className={`px-4 py-2 rounded-lg ${
+                      isOwn
                         ? "bg-orange-light text-black-normal rounded-br-none"
                         : "bg-orange-light text-black-normal rounded-bl-none"
-                      }`}
+                    }`}
                   >
                     {!isOwn && (
                       <p className="text-xs text-gray-600 mb-1 font-medium">
@@ -238,9 +247,9 @@ function ChatWindow({
                     <p className="text-xs text-gray-400 mt-1">
                       {msg.created_at
                         ? new Date(msg.created_at).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                         : ""}
                     </p>
                   </div>
@@ -318,22 +327,7 @@ function ChatWindow({
                 aria-label="Send message"
               >
                 {sending ? (
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8z"
-                    />
-                  </svg>
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <Send className="" />
                 )}

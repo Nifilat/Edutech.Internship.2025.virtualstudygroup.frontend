@@ -18,11 +18,15 @@ const Chatroom = () => {
   const { getUser } = useAuth();
   const user = getUser();
 
+  // ✅ ALWAYS call the hook, pass null if no chat selected
+  // This ensures hooks are called in the same order every render
   const {
     messages: echoMessages,
     isConnected: isEchoConnected,
-    setMessages,
-  } = useLaravelEcho(selectedChat?.id);
+    isLoadingMessages,
+    initializeMessages,
+    clearMessages,
+  } = useLaravelEcho(selectedChat?.id || null);
 
   // 🔹 Fetch user's study groups
   useEffect(() => {
@@ -86,10 +90,13 @@ const Chatroom = () => {
     fetchGroups();
   }, [user?.id]);
 
-  // 🔹 Fetch messages whenever selectedChat changes
+  // 🔹 Fetch messages when selectedChat changes
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedChat?.id) return;
+
+      // Clear previous messages immediately
+      clearMessages();
 
       try {
         const data = await chatAPI.getMessages(selectedChat.id);
@@ -97,42 +104,76 @@ const Chatroom = () => {
         // Ensure messages are properly formatted
         const formatted = (data || []).map((msg) => ({
           ...msg,
-          created_at: new Date(msg.created_at).toISOString(), // safe string
+          created_at: new Date(msg.created_at).toISOString(),
         }));
 
-        // Oldest first
-        setMessages([...formatted].reverse());
+        // ✅ Initialize messages (oldest first)
+        initializeMessages([...formatted].reverse());
+
+        // ✅ Mark chat as read when opened
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === selectedChat.id
+              ? { ...chat, unreadCount: 0 }
+              : chat
+          )
+        );
       } catch (err) {
         console.error("Error fetching messages:", err);
         toast.error("Failed to load messages");
+        initializeMessages([]);
       }
     };
 
     fetchMessages();
-  }, [selectedChat?.id, setMessages]);
+  }, [selectedChat?.id, clearMessages, initializeMessages]);
+
+  // 🔹 Update unread count when new messages arrive in background
+  useEffect(() => {
+    if (!echoMessages || echoMessages.length === 0) return;
+
+    const lastMessage = echoMessages[echoMessages.length - 1];
+    
+    // Only increment unread if message is NOT from current user and chat is NOT active
+    if (
+      lastMessage &&
+      lastMessage.user_id != user?.id &&
+      lastMessage.group_id !== selectedChat?.id
+    ) {
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === lastMessage.group_id
+            ? {
+                ...chat,
+                unreadCount: (chat.unreadCount || 0) + 1,
+                lastMessage: lastMessage.message,
+                time: formatMessageTime(lastMessage.created_at),
+              }
+            : chat
+        )
+      );
+    }
+  }, [echoMessages, user?.id, selectedChat?.id]);
 
   // 🔹 Handle send message
   const handleSendMessage = async (messageText) => {
     if (!selectedChat?.id) return;
 
     try {
+      // ✅ Send message to backend
       const response = await chatAPI.sendMessage(selectedChat.id, messageText);
 
-      if (response?.data) {
-        const newMessage = {
-          ...response.data,
-          user_id: user?.id,
-          user_name: `${user?.first_name} ${user?.last_name}`,
-          user_avatar: user?.avatar_url,
-          created_at: new Date().toISOString(),
-        };
-
-        // Optimistic update so message shows immediately
-        setMessages((prev) => [...prev, newMessage]);
+      // ✅ DON'T manually add message here - let WebSocket handle it
+      // This prevents duplicates since the backend will broadcast via WebSocket
+      
+      // Optional: Show sending indicator while waiting for WebSocket confirmation
+      if (!response?.data) {
+        throw new Error("Failed to send message");
       }
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
+      throw error; // Re-throw so ChatWindow can handle it
     }
   };
 
@@ -164,6 +205,7 @@ const Chatroom = () => {
             activeChat={selectedChat}
             echoMessages={echoMessages}
             isEchoConnected={isEchoConnected}
+            isLoadingMessages={isLoadingMessages}
             onSendMessage={handleSendMessage}
           />
         </>
