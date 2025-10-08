@@ -48,11 +48,11 @@ notificationApi.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // if (error.response?.status === 401) {
-    //   localStorage.removeItem("auth_token");
-    //   localStorage.removeItem("user");
-    //   window.location.href = "/login";
-    // }
+    if (error.response?.status === 401) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    }
     return Promise.reject(error);
   }
 );
@@ -124,7 +124,24 @@ export const studyGroupAPI = {
     );
     return response.data;
   },
+
+  addGroupMember: async (groupId, studentId) => {
+    try {
+      const response = await api.post(`/study-groups/${groupId}/add-member`, {
+        study_group_id: groupId,
+        student_id: studentId,
+      });
+      return response.data;
+    } catch (error) {
+      // Normalize error response for consistent handling in the component
+      return {
+        status: "error",
+        message: error.response?.data?.message || "Failed to add group member",
+      };
+    }
+  },
 };
+
 
 export const notificationsAPI = {
   getNotifications: async () => {
