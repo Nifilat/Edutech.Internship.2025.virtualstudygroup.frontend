@@ -19,43 +19,75 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
   const { getUser } = useAuth();
   const user = getUser();
 
+  // fetch group details and members
+  const fetchGroupDetails = async () => {
+    if (!groupId) return;
+    setLoading(true);
+    try {
+      const { data } = await studyGroupAPI.getGroupDetails(groupId);
+      const members = data?.members || [];
+
+      // Sort leader first
+      const sortedMembers = members.sort((a, b) => {
+        if (a.role === "Leader") return -1;
+        if (b.role === "Leader") return 1;
+        return 0;
+      });
+
+      const formatted = sortedMembers.map((m) => ({
+        id: m.user.id,
+        first_name: m.user.first_name,
+        last_name: m.user.last_name,
+        name: `${m.user.first_name} ${m.user.last_name}`,
+        avatar: m.user.avatar_url,
+        role: m.role,
+      }));
+
+      const currentMember = formatted.find((m) => m.id === user?.id);
+      setCurrentUserRole(currentMember?.role || null);
+      setParticipants(formatted);
+    } catch (err) {
+      console.error("Error fetching group details:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!groupId || !isOpen) return;
-
-    const fetchGroupDetails = async () => {
-      setLoading(true);
-      try {
-        const { data } = await studyGroupAPI.getGroupDetails(groupId);
-        const members = data?.members || [];
-
-        // Sort leader first
-        const sortedMembers = members.sort((a, b) => {
-          if (a.role === "Leader") return -1;
-          if (b.role === "Leader") return 1;
-          return 0;
-        });
-
-        const formatted = sortedMembers.map((m) => ({
-          id: m.user.id,
-          first_name: m.user.first_name,
-          last_name: m.user.last_name,
-          name: `${m.user.first_name} ${m.user.last_name}`,
-          avatar: m.user.avatar_url,
-          role: m.role,
-        }));
-
-        const currentMember = formatted.find((m) => m.id === user?.id);
-        setCurrentUserRole(currentMember?.role || null);
-        setParticipants(formatted);
-      } catch (err) {
-        console.error("Error fetching group details:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchGroupDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, isOpen]);
+
+  // Called by ParticipantsList after successful add (selectedParticipants passed)
+  const handleParticipantsChange = async (newList) => {
+    // optimistic local update
+    setParticipants(newList);
+
+    // fetch authoritative list (roles etc) from server
+    try {
+      await fetchGroupDetails();
+    } catch (err) {
+      console.error("Failed to refresh participants after adding", err);
+    }
+  };
+
+  // onAddMember provided to ParticipantsList; called per member with selectedUser object
+  const onAddMember = async (selectedUser) => {
+    try {
+      // Add member via API (student_id maps to selectedUser.id)
+      const resp = await studyGroupAPI.addGroupMember(groupId, selectedUser.id);
+      // resp is expected to be response.data (per your api.js)
+      return resp;
+    } catch (error) {
+      console.error("Add member API error:", error);
+      // Return shape checked by ParticipantsList; include message
+      return {
+        status: "error",
+        message: error.response?.data?.message || "Request failed",
+      };
+    }
+  };
 
   return (
     <>
@@ -70,15 +102,23 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
             </div>
 
             {/* Participants List */}
-            <div className="overflow-y-auto space-y-[20px]" style={{ maxHeight: "calc(100vh - 400px)", minHeight: "200px" }}>
+            <div
+              className="overflow-y-auto space-y-[20px]"
+              style={{ maxHeight: "calc(100vh - 400px)", minHeight: "200px" }}
+            >
               {loading ? (
                 <div className="flex justify-center items-center py-6">
                   <Loader2 className="w-6 h-6 animate-spin text-orange-normal" />
                 </div>
               ) : (
                 participants.map((participant) => {
-                  const isAdmin = currentUserRole === "Leader" || currentUserRole === "Admin";
-                  const canManage = isAdmin && participant.role !== "Leader" && participant.id !== user?.id;
+                  const isAdmin =
+                    currentUserRole === "Leader" ||
+                    currentUserRole === "Admin";
+                  const canManage =
+                    isAdmin &&
+                    participant.role !== "Leader" &&
+                    participant.id !== user?.id;
 
                   return (
                     <div
@@ -86,16 +126,19 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
                       className="flex items-center justify-between h-10 hover:bg-orange-light-hover px-4 rounded-[5px] transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-7.5 h-7.5 rounded-full border">
-                          <AvatarImage src={participant.avatar} alt={participant.name} />
+                        <Avatar className="w-8 h-8 rounded-full border">
+                          <AvatarImage
+                            src={participant.avatar}
+                            alt={participant.name}
+                          />
                           <AvatarFallback className="bg-orange-200 text-orange-800 text-sm">
                             {participant?.name
                               ? participant.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
                               : (participant?.first_name?.[0] || "") +
-                              (participant?.last_name?.[0] || "")}
+                                (participant?.last_name?.[0] || "")}
                           </AvatarFallback>
                         </Avatar>
 
@@ -126,24 +169,28 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
               )}
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons (only admins can see Add / Invite) */}
             <div className="p-4 border-t border-gray-100 space-y-3">
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-black-normal hover:bg-gray-50 h-auto py-3 font-semibold"
-                onClick={() => setOpenAddModal(true)}
-              >
-                <UserPlus className="w-5 h-5 mr-3" />
-                Add people
-              </Button>
+              {(currentUserRole === "Leader" || currentUserRole === "Admin") && (
+                <>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-black-normal hover:bg-gray-50 h-auto py-3 font-semibold"
+                    onClick={() => setOpenAddModal(true)}
+                  >
+                    <UserPlus className="w-5 h-5 mr-3" />
+                    Add people
+                  </Button>
 
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-black-normal hover:bg-gray-50 font-semibold h-auto py-3"
-              >
-                <Link className="w-5 h-5 mr-3" />
-                Invite to group via link
-              </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-black-normal hover:bg-gray-50 font-semibold h-auto py-3"
+                  >
+                    <Link className="w-5 h-5 mr-3" />
+                    Invite to group via link
+                  </Button>
+                </>
+              )}
 
               <Button
                 variant="ghost"
@@ -167,8 +214,9 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
                 last_name: p.last_name || "",
                 avatar_url: p.avatar,
               }))}
-              onParticipantsChange={(newList) => setParticipants(newList)}
+              onParticipantsChange={handleParticipantsChange}
               onClose={() => setOpenAddModal(false)}
+              onAddMember={onAddMember}
             />
           </DialogContent>
         </Dialog>

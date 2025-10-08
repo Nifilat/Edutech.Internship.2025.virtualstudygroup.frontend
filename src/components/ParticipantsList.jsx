@@ -5,24 +5,27 @@ import { X, Plus, Search } from "lucide-react";
 import { useUsers, useParticipantSearch } from "@/hooks/useStudyGroup";
 import { toast } from "sonner";
 
-function ParticipantsList({ participants, onParticipantsChange, onClose }) {
+function ParticipantsList({
+  participants,
+  onParticipantsChange,
+  onClose,
+  onAddMember, // optional callback to actually add a member on the backend
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState([
     ...participants,
   ]);
   const [imageErrors, setImageErrors] = useState(new Set());
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [adding, setAdding] = useState(false);
 
-  // Debounce search query
+  // Debounce search
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
-
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Use search endpoint when there's a query, otherwise get all users
+  // Get data
   const {
     data: usersData,
     isLoading: usersLoading,
@@ -34,24 +37,17 @@ function ParticipantsList({ participants, onParticipantsChange, onClose }) {
     error: searchError,
   } = useParticipantSearch(debouncedSearchQuery);
 
-  // Determine which data to use
   const isSearching = debouncedSearchQuery.trim().length > 0;
   const displayData = isSearching ? searchData : usersData;
   const isLoading = isSearching ? searchLoading : usersLoading;
   const error = isSearching ? searchError : usersError;
 
   useEffect(() => {
-  }, [displayData, isLoading, error]);
-
-  useEffect(() => {
-    if (error) {
-      toast.error("Failed to load users. Please try again.");
-    }
+    if (error) toast.error("Failed to load users. Please try again.");
   }, [error]);
 
-  const handleImageError = (participantId) => {
+  const handleImageError = (participantId) =>
     setImageErrors((prev) => new Set([...prev, participantId]));
-  };
 
   const handleAddParticipant = (participant) => {
     if (!selectedParticipants.find((p) => p.id === participant.id)) {
@@ -59,16 +55,45 @@ function ParticipantsList({ participants, onParticipantsChange, onClose }) {
     }
   };
 
-  const handleRemoveParticipant = (participantId) => {
-    setSelectedParticipants(
-      selectedParticipants.filter((p) => p.id !== participantId)
-    );
-  };
+  const handleRemoveParticipant = (participantId) =>
+    setSelectedParticipants(selectedParticipants.filter((p) => p.id !== participantId));
 
-  const handleAdd = () => {
-    onParticipantsChange(selectedParticipants);
-    onClose();
+  const handleAdd = async () => {
+    try {
+      const newMembers = selectedParticipants.filter(
+        (sp) => !participants.some((p) => p.id === sp.id)
+      );
+  
+      if (newMembers.length === 0) {
+        toast.info("No new members to add");
+        return;
+      }
+  
+      let allSuccess = true;
+  
+      for (const member of newMembers) {
+        if (onAddMember) {
+          const response = await onAddMember(member);
+  
+          // ✅ Fail immediately if backend returns error
+          if (response?.status !== "success") {
+            allSuccess = false;
+            throw new Error(response?.message || "Failed to add member");
+          }
+        }
+      }
+  
+      if (allSuccess) {
+        toast.success("Members added successfully");
+        onParticipantsChange(selectedParticipants);
+        onClose();
+      }
+    } catch (err) {
+      console.error("Error adding members:", err);
+      toast.error(err.message || "Failed to add new members");
+    }
   };
+  
 
   const handleCancel = () => {
     setSelectedParticipants([...participants]);
@@ -76,9 +101,8 @@ function ParticipantsList({ participants, onParticipantsChange, onClose }) {
   };
 
   const renderAvatar = (participant, size = "w-12 h-12") => {
-    const initials = `${participant.first_name?.[0] || ""}${
-      participant.last_name?.[0] || ""
-    }`.toUpperCase();
+    const initials = `${participant.first_name?.[0] || ""}${participant.last_name?.[0] || ""
+      }`.toUpperCase();
     const hasValidAvatar =
       participant.avatar_url && !imageErrors.has(participant.id);
 
@@ -117,7 +141,7 @@ function ParticipantsList({ participants, onParticipantsChange, onClose }) {
       </div>
 
       <div className="p-6 space-y-4">
-        {/* Selected Participants Tags */}
+        {/* Selected Participants */}
         {selectedParticipants.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
             {selectedParticipants.map((participant) => (
@@ -194,11 +218,10 @@ function ParticipantsList({ participants, onParticipantsChange, onClose }) {
                   <button
                     onClick={() => handleAddParticipant(participant)}
                     disabled={isSelected}
-                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                      isSelected
+                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSelected
                         ? "border-gray-300 text-gray-300 cursor-not-allowed"
                         : "border-[#D2401E] text-[#D2401E] hover:bg-[#D2401E] hover:text-white hover:scale-105"
-                    }`}
+                      }`}
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -213,8 +236,9 @@ function ParticipantsList({ participants, onParticipantsChange, onClose }) {
           <Button
             onClick={handleAdd}
             className="w-2/5 bg-orange-normal hover:bg-orange-normal-hover text-white-normal h-10 font-medium rounded-lg"
+            disabled={adding}
           >
-            Add
+            {adding ? "Adding..." : "Add"}
           </Button>
         </div>
       </div>
