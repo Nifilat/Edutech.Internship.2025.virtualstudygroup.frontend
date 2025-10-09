@@ -1,6 +1,7 @@
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { UserGroup } from "./icons";
+import { Check, CheckCheck } from "lucide-react";
 
 function ChatListItem({ chat, isActive, onClick }) {
   const renderChatAvatar = () => {
@@ -41,13 +42,26 @@ function ChatListItem({ chat, isActive, onClick }) {
             <h3 className="text-base font-semibold text-black-normal truncate">
               {chat.name}
             </h3>
-            <span className="text-[9px] font-medium text-orange-normal ml-2">
+            <span className="text-xs text-orange-normal ml-2 whitespace-nowrap">
               {(chat.time).toUpperCase()}
             </span>
           </div>
-          <p className="text-sm text-gray-500 truncate mt-1">
-            {chat.lastMessage}
-          </p>
+          <div className="flex items-center mt-1">
+            {chat.lastMessageFromMe && (
+              <div className="mr-1 flex-shrink-0">
+                {chat.lastMessageRead ? (
+                  <CheckCheck className="w-4 h-4 text-blue-500" />
+                ) : chat.lastMessageDelivered ? (
+                  <CheckCheck className="w-4 h-4 text-gray-400" />
+                ) : (
+                  <Check className="w-4 h-4 text-gray-400" />
+                )}
+              </div>
+            )}
+            <p className="text-sm text-gray-500 truncate">
+              {chat.lastMessage}
+            </p>
+          </div>
         </div>
       </div>
       <div className="flex flex-col items-end ml-2">
