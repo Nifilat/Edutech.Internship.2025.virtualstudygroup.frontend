@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://ediify.tife.com.ng/api";
-const NOTIFICATION_BASE_URL = "https://ediifyapi.tife.com.ng/api";
+const API_BASE_URL = "https://ediifyapi.tife.com.ng/api";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,12 +9,6 @@ export const api = axios.create({
   },
 });
 
-export const notificationApi = axios.create({
-  baseURL: NOTIFICATION_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
@@ -31,18 +24,6 @@ api.interceptors.request.use(
   }
 );
 
-notificationApi.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Response interceptor to handle auth errors
 api.interceptors.response.use(
@@ -118,7 +99,7 @@ export const studyGroupAPI = {
   },
 
   handleJoinRequest: async (requestId, requestData) => {
-    const response = await notificationApi.post(
+    const response = await api.post(
       `/study-groups/${requestId}/handle-request`,
       requestData
     );
@@ -145,7 +126,7 @@ export const studyGroupAPI = {
 
 export const notificationsAPI = {
   getNotifications: async () => {
-    const response = await notificationApi.get("/notifications");
+    const response = await api.get("/notifications");
     return response.data;
   },
 };
@@ -159,14 +140,14 @@ export const userAPI = {
 
 export const chatAPI = {
   sendMessage: async (groupId, messageText) => {
-    const response = await notificationApi.post(`/groups/${groupId}/messages`, {
+    const response = await api.post(`/groups/${groupId}/messages`, {
       message: messageText,
     });
     return response.data;
   },
 
   getMessages: async (groupId) => {
-    const response = await notificationApi.get(`/groups/${groupId}/messages`);
+    const response = await api.get(`/groups/${groupId}/messages`);
     return response.data;
   },
 };
