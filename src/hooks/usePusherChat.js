@@ -18,10 +18,10 @@ export const usePusherChat = (groupId) => {
 
     pusherRef.current = new Pusher("ediify-key", {
       cluster: "mt1",
-      wsHost: "54.162.114.162", // ✅ Use IP address to match Postman
+      wsHost: "54.162.114.162", 
       wsPort: 6001,
       wssPort: 6001,
-      forceTLS: false,
+      forceTLS: true,
       enabledTransports: ["ws", "wss"],
       disableStats: true,
     });
@@ -90,11 +90,7 @@ export const usePusherChat = (groupId) => {
 
     // Listen for message.sent event
     channelRef.current.bind("message.sent", (eventData) => {
-      console.log("\n" + "🔥".repeat(35));
-      console.log("🔥 MESSAGE.SENT EVENT RECEIVED!");
-      console.log("🔥 Raw event data:", eventData);
-      console.log("🔥 Data type:", typeof eventData);
-      console.log("🔥".repeat(35) + "\n");
+      
 
       try {
         // The data can come as object or string depending on Pusher version
@@ -126,8 +122,7 @@ export const usePusherChat = (groupId) => {
           user: msg.user,
         };
 
-        console.log("✅ Formatted message:", formattedMessage);
-        console.log(`📊 Adding to messages array...\n`);
+        
 
         // Add to state
         setMessages((prev) => {
@@ -142,9 +137,7 @@ export const usePusherChat = (groupId) => {
           }
 
           const newMessages = [...prev, formattedMessage];
-          console.log(
-            `✅ Message added! Total messages: ${newMessages.length}`
-          );
+          
           return newMessages;
         });
       } catch (error) {
@@ -171,7 +164,7 @@ export const usePusherChat = (groupId) => {
   }, []);
 
   const clearMessages = useCallback(() => {
-    console.log("🗑️ Clearing messages");
+    
     setMessages([]);
     setIsLoadingMessages(true);
   }, []);
@@ -183,7 +176,7 @@ export const usePusherChat = (groupId) => {
         console.warn("⚠️ Duplicate message prevented:", message.id);
         return prev;
       }
-      console.log(`✅ Message added! Total: ${prev.length + 1}`);
+      
       return [...prev, message];
     });
   }, []);
@@ -202,6 +195,6 @@ export const usePusherChat = (groupId) => {
     initializeMessages,
     clearMessages,
     addMessage,
-    updateMessageStatus, // ✅ Add this line
+    updateMessageStatus, 
   };
 };
