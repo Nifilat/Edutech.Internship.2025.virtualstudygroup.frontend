@@ -21,13 +21,13 @@ export const usePusherChat = (groupId) => {
 
     pusherRef.current = new Pusher("ediify-key", {
       cluster: "mt1",
-      wsHost: "ediifyapi.tife.com.ng",
-      wsPort: 6001,
-      wssPort: 6001,
-      forceTLS: isSecure, // Use TLS on production (HTTPS)
-      enabledTransports: isSecure ? ["wss"] : ["ws", "wss"], // Only WSS on HTTPS
+      wsHost: "ediifyapi.tife.com.ng", 
+      wsPort: 443, 
+      wssPort: 443,
+      forceTLS: true, // ✅ always use TLS on live
+      enabledTransports: ["wss"], 
       disableStats: true,
-      encrypted: isSecure,
+      encrypted: true,
     });
 
     pusherRef.current.connection.bind("connected", () => {
