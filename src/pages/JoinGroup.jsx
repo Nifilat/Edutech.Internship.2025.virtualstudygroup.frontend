@@ -44,7 +44,7 @@ const JoinGroup = ({ onCreateGroupClick }) => {
           "Failed to send join request. Please try again."
       );
     } finally {
-      setJoiningGroupId(null); // Clear the joining state
+      setJoiningGroupId(null); 
     }
   };
 
@@ -140,7 +140,6 @@ const JoinGroup = ({ onCreateGroupClick }) => {
                         {group.description}
                       </p>
                       <div className="flex items-center gap-4 text-xs text-gray-400">
-                        <span>ID: {group.id}</span>
                         <span>
                           Created:{" "}
                           {new Date(group.created_at).toLocaleDateString()}
