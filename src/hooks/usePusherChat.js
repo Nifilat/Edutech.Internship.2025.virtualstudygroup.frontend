@@ -18,7 +18,7 @@ export const usePusherChat = (groupId) => {
 
     pusherRef.current = new Pusher("ediify-key", {
       cluster: "mt1",
-      wsHost: "54.162.114.162", 
+      wsHost: "ediifyapi.tife.com.ng", 
       wsPort: 6001,
       wssPort: 6001,
       forceTLS: true,
