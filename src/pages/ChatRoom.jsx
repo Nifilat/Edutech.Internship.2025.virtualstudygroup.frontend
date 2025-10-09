@@ -3,7 +3,7 @@ import ChatSidebar from "@/components/ChatSidebar";
 import ChatWindow from "@/components/ChatWindow";
 import { useAuth } from "@/hooks/useAuth";
 import { studyGroupAPI, chatAPI } from "../lib/api";
-import { useLaravelEcho } from "@/hooks/useLaravelEcho";
+import { usePusherChat } from "@/hooks/usePusherChat";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatMessageTime } from "../lib/formatMessageTime";
@@ -26,7 +26,9 @@ const Chatroom = () => {
     isLoadingMessages,
     initializeMessages,
     clearMessages,
-  } = useLaravelEcho(selectedChat?.id || null);
+    addMessage,
+    updateMessageStatus,
+  } = usePusherChat(selectedChat?.id || null);
 
   // 🔹 Fetch user's study groups
   useEffect(() => {
@@ -48,17 +50,24 @@ const Chatroom = () => {
             .map((group) => {
               const course = coursesMap.get(group.course_id);
 
+              // Get last message info if available
+              const lastMsg = group.last_message;
+              const lastMessageFromMe = lastMsg?.user_id == user?.id;
+
               return {
                 id: group.id,
                 groupId: group.group_id,
                 name: group.group_name,
                 courseCode: course?.course_code || `COURSE ${group.course_id}`,
                 courseName: course?.course_name || "",
-                lastMessage: group.description || "Start chatting...",
-                time: formatMessageTime(group.updated_at),
+                lastMessage: lastMsg?.message || group.description || "Start chatting...",
+                time: formatMessageTime(lastMsg?.created_at || group.updated_at),
                 avatar: null,
                 isGroup: true,
                 unreadCount: group.unread_count || 0,
+                lastMessageFromMe: lastMessageFromMe,
+                lastMessageRead: lastMsg?.status === 'read',
+                lastMessageDelivered: lastMsg?.status === 'delivered',
                 pendingRequest:
                   Number(group.created_by) === Number(user?.id) &&
                   group.pending_requests?.length > 0
@@ -118,6 +127,15 @@ const Chatroom = () => {
               : chat
           )
         );
+
+        // ✅ Mark messages as read when chat is opened
+        setTimeout(() => {
+          formatted.forEach(msg => {
+            if (msg.user_id != user?.id) { // Only mark others' messages as read
+              updateMessageStatus(msg.id, 'read');
+            }
+          });
+        }, 1000); // Small delay to ensure messages are loaded
       } catch (err) {
         console.error("Error fetching messages:", err);
         toast.error("Failed to load messages");
@@ -128,54 +146,71 @@ const Chatroom = () => {
     fetchMessages();
   }, [selectedChat?.id, clearMessages, initializeMessages]);
 
-  // 🔹 Update unread count when new messages arrive in background
+  // 🔹 Update chat list when new messages arrive
   useEffect(() => {
     if (!echoMessages || echoMessages.length === 0) return;
 
     const lastMessage = echoMessages[echoMessages.length - 1];
-    
-    // Only increment unread if message is NOT from current user and chat is NOT active
-    if (
-      lastMessage &&
-      lastMessage.user_id != user?.id &&
-      lastMessage.group_id !== selectedChat?.id
-    ) {
-      setChats((prevChats) =>
-        prevChats.map((chat) =>
-          chat.id === lastMessage.group_id
-            ? {
-                ...chat,
-                unreadCount: (chat.unreadCount || 0) + 1,
-                lastMessage: lastMessage.message,
-                time: formatMessageTime(lastMessage.created_at),
-              }
-            : chat
-        )
-      );
+    if (!lastMessage) return;
+
+    setChats((prevChats) => {
+      const updatedChats = prevChats.map((chat) => {
+        if (chat.id === lastMessage.group_id) {
+          const isFromMe = lastMessage.user_id == user?.id;
+          const isActiveChat = chat.id === selectedChat?.id;
+
+          return {
+            ...chat,
+            lastMessage: lastMessage.message,
+            time: formatMessageTime(lastMessage.created_at),
+            lastMessageFromMe: isFromMe,
+            lastMessageRead: lastMessage.status === 'read',
+            lastMessageDelivered: lastMessage.status === 'delivered',
+            // Only increment unread if NOT from me and NOT currently viewing this chat
+            unreadCount: (!isFromMe && !isActiveChat)
+              ? (chat.unreadCount || 0) + 1
+              : isActiveChat ? 0 : chat.unreadCount
+          };
+        }
+        return chat;
+      });
+
+      // Sort chats: unread first, then by most recent message time
+      return updatedChats.sort((a, b) => {
+        if (b.unreadCount !== a.unreadCount) {
+          return b.unreadCount - a.unreadCount;
+        }
+        return new Date(b.time) - new Date(a.time);
+      });
+    });
+
+    // Mark messages as read if they're in the current chat
+    if (lastMessage.group_id === selectedChat?.id && lastMessage.user_id != user?.id) {
+      setTimeout(() => {
+        updateMessageStatus(lastMessage.id, 'read');
+      }, 500);
     }
   }, [echoMessages, user?.id, selectedChat?.id]);
 
   // 🔹 Handle send message
-  const handleSendMessage = async (messageText) => {
-    if (!selectedChat?.id) return;
+  // 🔹 Handle send message
+const handleSendMessage = async (messageText) => {
+  if (!selectedChat?.id) return;
 
-    try {
-      // ✅ Send message to backend
-      const response = await chatAPI.sendMessage(selectedChat.id, messageText);
+  try {
+    const response = await chatAPI.sendMessage(selectedChat.id, messageText);
 
-      // ✅ DON'T manually add message here - let WebSocket handle it
-      // This prevents duplicates since the backend will broadcast via WebSocket
-      
-      // Optional: Show sending indicator while waiting for WebSocket confirmation
-      if (!response?.data) {
-        throw new Error("Failed to send message");
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      toast.error("Failed to send message");
-      throw error; // Re-throw so ChatWindow can handle it
+    if (!response?.data) {
+      throw new Error("Failed to send message");
     }
-  };
+    
+    // ✅ Message will appear via WebSocket automatically - no manual adding
+  } catch (error) {
+    console.error("Error sending message:", error);
+    toast.error("Failed to send message");
+    throw error;
+  }
+};
 
   if (loadingChats) {
     return (
