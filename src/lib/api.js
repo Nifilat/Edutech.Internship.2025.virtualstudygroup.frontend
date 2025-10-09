@@ -159,14 +159,14 @@ export const userAPI = {
 
 export const chatAPI = {
   sendMessage: async (groupId, messageText) => {
-    const response = await api.post(`/groups/${groupId}/messages`, {
+    const response = await notificationApi.post(`/groups/${groupId}/messages`, {
       message: messageText,
     });
     return response.data;
   },
 
   getMessages: async (groupId) => {
-    const response = await api.get(`/groups/${groupId}/messages`);
+    const response = await notificationApi.get(`/groups/${groupId}/messages`);
     return response.data;
   },
 };
