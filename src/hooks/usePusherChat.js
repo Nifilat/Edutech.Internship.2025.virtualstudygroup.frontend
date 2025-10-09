@@ -21,7 +21,7 @@ export const usePusherChat = (groupId) => {
       wsHost: "54.162.114.162", 
       wsPort: 6001,
       wssPort: 6001,
-      forceTLS: false,
+      forceTLS: true,
       enabledTransports: ["ws", "wss"],
       disableStats: true,
     });
