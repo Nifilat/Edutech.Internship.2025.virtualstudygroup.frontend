@@ -13,17 +13,21 @@ export const usePusherChat = (groupId) => {
   useEffect(() => {
     if (pusherRef.current) return;
 
-    console.log("🚀 Initializing Pusher...");
+    // Detect if we're on HTTPS (production) or HTTP (localhost)
+    const isSecure = window.location.protocol === "https:";
+
+    console.log(`🚀 Initializing Pusher... (Secure: ${isSecure})`);
     Pusher.logToConsole = false;
 
     pusherRef.current = new Pusher("ediify-key", {
       cluster: "mt1",
-      wsHost: "ediifyapi.tife.com.ng", 
+      wsHost: "ediifyapi.tife.com.ng",
       wsPort: 6001,
       wssPort: 6001,
-      forceTLS: true,
-      enabledTransports: ["ws", "wss"],
+      forceTLS: isSecure, // Use TLS on production (HTTPS)
+      enabledTransports: isSecure ? ["wss"] : ["ws", "wss"], // Only WSS on HTTPS
       disableStats: true,
+      encrypted: isSecure,
     });
 
     pusherRef.current.connection.bind("connected", () => {
@@ -90,8 +94,6 @@ export const usePusherChat = (groupId) => {
 
     // Listen for message.sent event
     channelRef.current.bind("message.sent", (eventData) => {
-      
-
       try {
         // The data can come as object or string depending on Pusher version
         let parsedData = eventData;
@@ -122,8 +124,6 @@ export const usePusherChat = (groupId) => {
           user: msg.user,
         };
 
-        
-
         // Add to state
         setMessages((prev) => {
           // Check for duplicates
@@ -137,7 +137,7 @@ export const usePusherChat = (groupId) => {
           }
 
           const newMessages = [...prev, formattedMessage];
-          
+
           return newMessages;
         });
       } catch (error) {
@@ -164,7 +164,6 @@ export const usePusherChat = (groupId) => {
   }, []);
 
   const clearMessages = useCallback(() => {
-    
     setMessages([]);
     setIsLoadingMessages(true);
   }, []);
@@ -176,7 +175,7 @@ export const usePusherChat = (groupId) => {
         console.warn("⚠️ Duplicate message prevented:", message.id);
         return prev;
       }
-      
+
       return [...prev, message];
     });
   }, []);
@@ -195,6 +194,6 @@ export const usePusherChat = (groupId) => {
     initializeMessages,
     clearMessages,
     addMessage,
-    updateMessageStatus, 
+    updateMessageStatus,
   };
 };
