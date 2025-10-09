@@ -29,26 +29,28 @@ export const useStudyRoomsWithCourses = () => {
   } = useCourses();
 
   const studyRoomsWithCourses = useMemo(() => {
-    if (!studyRoomsData?.data || !coursesData) {
-      return [];
-    }
+  if (!studyRoomsData?.data || !coursesData) {
+    return [];
+  }
 
-    // Create a map of courses by id for quick lookup
-    const coursesMap = new Map(
-      coursesData.map((course) => [course.id.toString(), course])
-    );
+  // Create a map - handle both string and number IDs
+  const coursesMap = new Map(
+    coursesData.map((course) => [course.id, course])
+  );
 
-    // Map study rooms with their corresponding course data
-    return studyRoomsData.data.map((room) => {
-      const course = coursesMap.get(room.course_id);
-      return {
-        ...room,
-        course_code: course?.course_code || "N/A",
-        course_name: course?.course_name || "Unknown Course",
-        course_description: course?.course_description || "",
-      };
-    });
-  }, [studyRoomsData, coursesData]);
+  // Map study rooms with their corresponding course data
+  return studyRoomsData.data.map((room) => {
+    // Try both as number and string
+    const course = coursesMap.get(room.course_id) || coursesMap.get(String(room.course_id)) || coursesMap.get(Number(room.course_id));
+    
+    return {
+      ...room,
+      course_code: course?.course_code || "N/A",
+      course_name: course?.course_name || "Unknown Course",
+      course_description: course?.course_description || "",
+    };
+  });
+}, [studyRoomsData, coursesData]);
 
   return {
     data: studyRoomsWithCourses,
