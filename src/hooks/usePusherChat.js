@@ -22,10 +22,10 @@ export const usePusherChat = (groupId) => {
     pusherRef.current = new Pusher("ediify-key", {
       cluster: "mt1",
       wsHost: "ediifyapi.tife.com.ng",
-      wsPort: 6001,
-      // wssPort: 6001,
-      forceTLS: isSecure, // Use TLS on production (HTTPS)
-      enabledTransports: isSecure ? ["wss"] : ["ws", "wss"], // Only WSS on HTTPS
+      wsPort: isSecure ? 443 : 6001, // ✅ Use 443 for WSS (no custom port needed)
+      wssPort: 443, // ✅ Standard HTTPS/WSS port
+      forceTLS: isSecure,
+      enabledTransports: isSecure ? ["wss"] : ["ws", "wss"],
       disableStats: true,
       encrypted: isSecure,
     });
