@@ -23,7 +23,7 @@ export const usePusherChat = (groupId) => {
       cluster: "mt1",
       wsHost: "ediifyapi.tife.com.ng",
       wsPort: isSecure ? 443 : 6001, // ✅ Use 443 for WSS (no custom port needed)
-      wssPort: 443, // ✅ Standard HTTPS/WSS port
+      // wssPort: 443, // ✅ Standard HTTPS/WSS port
       forceTLS: isSecure,
       enabledTransports: isSecure ? ["wss"] : ["ws", "wss"],
       disableStats: true,
