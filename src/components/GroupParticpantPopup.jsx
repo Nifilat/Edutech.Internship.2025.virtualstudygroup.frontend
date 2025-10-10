@@ -6,6 +6,9 @@ import { UserPlus, Link, LogOut, ChevronRight } from "lucide-react";
 import { studyGroupAPI } from "@/lib/api";
 import { Loader as Loader2 } from "lucide-react";
 import ParticipantsList from "./ParticipantsList";
+import {
+  DeleteConfirmationPopup
+} from "./MemberActionsPopup";
 import MemberActionsPopup from "./MemberActionsPopup";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -16,6 +19,9 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
+
   const { getUser } = useAuth();
   const user = getUser();
 
@@ -89,6 +95,24 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!memberToDelete) return;
+
+    try {
+      // Example API call
+      await studyGroupAPI.removeGroupMember(groupId, memberToDelete.id);
+      toast.success(`${memberToDelete.name} has been removed from the group`);
+
+      // Update list
+      setParticipants((prev) => prev.filter((p) => p.id !== memberToDelete.id));
+    } catch (err) {
+      toast.error("Failed to remove member");
+    } finally {
+      setShowDeleteConfirm(false);
+      setMemberToDelete(null);
+    }
+  };
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -113,8 +137,7 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
               ) : (
                 participants.map((participant) => {
                   const isAdmin =
-                    currentUserRole === "Leader" ||
-                    currentUserRole === "Admin";
+                    currentUserRole === "Leader" || currentUserRole === "Admin";
                   const canManage =
                     isAdmin &&
                     participant.role !== "Leader" &&
@@ -171,7 +194,8 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
 
             {/* Action Buttons (only admins can see Add / Invite) */}
             <div className="p-4 border-t border-gray-100 space-y-3">
-              {(currentUserRole === "Leader" || currentUserRole === "Admin") && (
+              {(currentUserRole === "Leader" ||
+                currentUserRole === "Admin") && (
                 <>
                   <Button
                     variant="ghost"
@@ -231,9 +255,20 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
           setSelectedMember(null);
         }}
         onRemoveMember={() => {
-          toast.success(`${selectedMember?.name} has been removed from the group`);
+          setMemberToDelete(selectedMember);
+          setShowDeleteConfirm(true);
           setSelectedMember(null);
         }}
+      />
+
+      <DeleteConfirmationPopup
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setMemberToDelete(null);
+        }}
+        member={memberToDelete}
+        onConfirmDelete={handleConfirmDelete}
       />
     </>
   );
