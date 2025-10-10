@@ -122,7 +122,20 @@ export const studyGroupAPI = {
       };
     }
   },
+  removeGroupMember: async (groupId, memberId) => {
+    const response = await api.delete(
+      `/study-groups/${groupId}/admin-remove-members/${memberId}`,
+      {
+        data: {
+          member_id: memberId,
+        },
+      }
+    );
+    return response.data;
+  }
 };
+
+
 
 
 export const notificationsAPI = {
