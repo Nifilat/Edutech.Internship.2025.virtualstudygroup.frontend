@@ -309,7 +309,7 @@ function ChatWindow({
                         className={`px-4 py-2 rounded-lg ${
                           isOwn
                             ? "bg-orange-light text-black-normal rounded-br-none"
-                            : "bg-orange-light text-black-normal rounded-bl-none"
+                            : "bg-grey-light text-black-normal rounded-bl-none"
                         }`}
                       >
                         {!isOwn && (
