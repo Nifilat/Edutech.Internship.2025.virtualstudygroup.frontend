@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
+import { AddTeam } from "./icons";
 import { UserPlus, Link, LogOut, ChevronRight } from "lucide-react";
 import { studyGroupAPI } from "@/lib/api";
 import { Loader as Loader2 } from "lucide-react";
@@ -202,7 +203,7 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
                     className="w-full justify-start text-black-normal hover:bg-gray-50 h-auto py-3 font-semibold"
                     onClick={() => setOpenAddModal(true)}
                   >
-                    <UserPlus className="w-5 h-5 mr-3" />
+                    <AddTeam className="w-5 h-5 mr-3" stroke="#141B34" />
                     Add people
                   </Button>
 
