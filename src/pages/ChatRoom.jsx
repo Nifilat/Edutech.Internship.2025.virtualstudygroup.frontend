@@ -18,15 +18,12 @@ const Chatroom = () => {
   const { getUser } = useAuth();
   const user = getUser();
 
-  // ✅ ALWAYS call the hook, pass null if no chat selected
-  // This ensures hooks are called in the same order every render
   const {
     messages: echoMessages,
     isConnected: isEchoConnected,
     isLoadingMessages,
     initializeMessages,
     clearMessages,
-    addMessage,
     updateMessageStatus,
   } = usePusherChat(selectedChat?.id || null);
 
@@ -60,14 +57,17 @@ const Chatroom = () => {
                 name: group.group_name,
                 courseCode: course?.course_code || `COURSE ${group.course_id}`,
                 courseName: course?.course_name || "",
-                lastMessage: lastMsg?.message || group.description || "Start chatting...",
-                time: formatMessageTime(lastMsg?.created_at || group.updated_at),
+                lastMessage:
+                  lastMsg?.message || group.description || "Start chatting...",
+                time: formatMessageTime(
+                  lastMsg?.created_at || group.updated_at
+                ),
                 avatar: null,
                 isGroup: true,
                 unreadCount: group.unread_count || 0,
                 lastMessageFromMe: lastMessageFromMe,
-                lastMessageRead: lastMsg?.status === 'read',
-                lastMessageDelivered: lastMsg?.status === 'delivered',
+                lastMessageRead: lastMsg?.status === "read",
+                lastMessageDelivered: lastMsg?.status === "delivered",
                 pendingRequest:
                   Number(group.created_by) === Number(user?.id) &&
                   group.pending_requests?.length > 0
@@ -76,12 +76,10 @@ const Chatroom = () => {
               };
             })
             .sort((a, b) => {
-              // 1️⃣ If either has unread, sort unread first
-              if (b.unreadCount !== a.unreadCount) {
-                return b.unreadCount - a.unreadCount;
-              }
-              // 2️⃣ Otherwise sort by most recent update
-              return new Date(b.time) - new Date(a.time);
+              // Sort by most recent message time only
+              const timeA = new Date(a.time);
+              const timeB = new Date(b.time);
+              return timeB - timeA; // Most recent first
             });
 
           setChats(transformed);
@@ -101,50 +99,48 @@ const Chatroom = () => {
 
   // 🔹 Fetch messages when selectedChat changes
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (!selectedChat?.id) return;
+  const fetchMessages = async () => {
+    if (!selectedChat?.id) return;
 
-      // Clear previous messages immediately
-      clearMessages();
+    clearMessages();
 
-      try {
-        const data = await chatAPI.getMessages(selectedChat.id);
+    try {
+      const data = await chatAPI.getMessages(selectedChat.id);
+      const formatted = (data || []).map((msg) => ({
+        ...msg,
+        created_at: new Date(msg.created_at).toISOString(),
+      }));
 
-        // Ensure messages are properly formatted
-        const formatted = (data || []).map((msg) => ({
-          ...msg,
-          created_at: new Date(msg.created_at).toISOString(),
-        }));
+      initializeMessages([...formatted].reverse());
 
-        // ✅ Initialize messages (oldest first)
-        initializeMessages([...formatted].reverse());
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === selectedChat.id ? { ...chat, unreadCount: 0 } : chat
+        )
+      );
 
-        // ✅ Mark chat as read when opened
-        setChats((prevChats) =>
-          prevChats.map((chat) =>
-            chat.id === selectedChat.id
-              ? { ...chat, unreadCount: 0 }
-              : chat
-          )
-        );
+      setTimeout(() => {
+        formatted.forEach((msg) => {
+          if (msg.user_id != user?.id) {
+            updateMessageStatus(msg.id, "read");
+          }
+        });
+      }, 1000);
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+      toast.error("Failed to load messages");
+      initializeMessages([]);
+    }
+  };
 
-        // ✅ Mark messages as read when chat is opened
-        setTimeout(() => {
-          formatted.forEach(msg => {
-            if (msg.user_id != user?.id) { // Only mark others' messages as read
-              updateMessageStatus(msg.id, 'read');
-            }
-          });
-        }, 1000); // Small delay to ensure messages are loaded
-      } catch (err) {
-        console.error("Error fetching messages:", err);
-        toast.error("Failed to load messages");
-        initializeMessages([]);
-      }
-    };
+  fetchMessages();
+}, [
+  selectedChat?.id,
+  clearMessages,
+  initializeMessages,
+  updateMessageStatus, // ✅ Add this
+]);
 
-    fetchMessages();
-  }, [selectedChat?.id, clearMessages, initializeMessages]);
 
   // 🔹 Update chat list when new messages arrive
   useEffect(() => {
@@ -164,12 +160,15 @@ const Chatroom = () => {
             lastMessage: lastMessage.message,
             time: formatMessageTime(lastMessage.created_at),
             lastMessageFromMe: isFromMe,
-            lastMessageRead: lastMessage.status === 'read',
-            lastMessageDelivered: lastMessage.status === 'delivered',
+            lastMessageRead: lastMessage.status === "read",
+            lastMessageDelivered: lastMessage.status === "delivered",
             // Only increment unread if NOT from me and NOT currently viewing this chat
-            unreadCount: (!isFromMe && !isActiveChat)
-              ? (chat.unreadCount || 0) + 1
-              : isActiveChat ? 0 : chat.unreadCount
+            unreadCount:
+              !isFromMe && !isActiveChat
+                ? (chat.unreadCount || 0) + 1
+                : isActiveChat
+                ? 0
+                : chat.unreadCount,
           };
         }
         return chat;
@@ -185,32 +184,35 @@ const Chatroom = () => {
     });
 
     // Mark messages as read if they're in the current chat
-    if (lastMessage.group_id === selectedChat?.id && lastMessage.user_id != user?.id) {
+    if (
+      lastMessage.group_id === selectedChat?.id &&
+      lastMessage.user_id != user?.id
+    ) {
       setTimeout(() => {
-        updateMessageStatus(lastMessage.id, 'read');
+        updateMessageStatus(lastMessage.id, "read");
       }, 500);
     }
   }, [echoMessages, user?.id, selectedChat?.id]);
 
   // 🔹 Handle send message
   // 🔹 Handle send message
-const handleSendMessage = async (messageText) => {
-  if (!selectedChat?.id) return;
+  const handleSendMessage = async (messageText) => {
+    if (!selectedChat?.id) return;
 
-  try {
-    const response = await chatAPI.sendMessage(selectedChat.id, messageText);
+    try {
+      const response = await chatAPI.sendMessage(selectedChat.id, messageText);
 
-    if (!response?.data) {
-      throw new Error("Failed to send message");
+      if (!response?.data) {
+        throw new Error("Failed to send message");
+      }
+
+      // ✅ Message will appear via WebSocket automatically - no manual adding
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error("Failed to send message");
+      throw error;
     }
-    
-    // ✅ Message will appear via WebSocket automatically - no manual adding
-  } catch (error) {
-    console.error("Error sending message:", error);
-    toast.error("Failed to send message");
-    throw error;
-  }
-};
+  };
 
   if (loadingChats) {
     return (
