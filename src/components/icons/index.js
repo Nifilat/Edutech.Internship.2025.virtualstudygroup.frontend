@@ -15,3 +15,5 @@ export { default as Paperclip } from './Paperclip';
 export { default as Mic } from './Mic';
 export { default as Send } from './Send';
 export { default as ArrowLeft } from './ArrowLeft';
+export { default as UserMinus } from './UserMinus';
+export { default as UsersCheck } from './UsersCheck';
