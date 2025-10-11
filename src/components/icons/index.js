@@ -17,3 +17,4 @@ export { default as Send } from './Send';
 export { default as ArrowLeft } from './ArrowLeft';
 export { default as UserMinus } from './UserMinus';
 export { default as UsersCheck } from './UsersCheck';
+export { default as Album } from './Album';
