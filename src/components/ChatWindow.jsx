@@ -16,6 +16,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import GroupParticipantsPopup from "./GroupParticpantPopup";
+import FileUploadDropdown from "../features/chat/components/FileUploadModal";
 import { useAuth } from "@/hooks/useAuth";
 import { studyGroupAPI } from "@/lib/api";
 import { toast } from "sonner";
@@ -34,11 +35,11 @@ function ChatWindow({
   const [showParticipantsPopup, setShowParticipantsPopup] = useState(false);
   const [sending, setSending] = useState(false);
   const [participantsCount, setParticipantsCount] = useState(0);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const { getUser } = useAuth();
   const user = getUser();
-
 
   // ✅ Fetch participant count when chat changes
   useEffect(() => {
@@ -93,6 +94,18 @@ function ChatWindow({
     } finally {
       setSending(false);
     }
+  };
+
+  const handleFileSelect = (files, type) => {
+    console.log(`Selected ${type}:`, files);
+    setSelectedFiles((prev) => [
+      ...prev,
+      ...files.map((f) => ({ file: f, type })),
+    ]);
+    toast.success(`${files.length} file(s) selected`);
+
+    // TODO: Upload files to your backend here
+    // Example: await uploadFiles(files);
   };
 
   const handleInputKeyDown = (e) => {
@@ -403,13 +416,19 @@ function ChatWindow({
               </div>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-gray-400 hover:text-gray-600"
+          <FileUploadDropdown
+            onFileSelect={handleFileSelect}
+            disabled={sending}
           >
-            <Paperclip className="w-5 h-5" />
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <Paperclip className="w-5 h-5" />
+            </Button>
+          </FileUploadDropdown>
+          
           <div className="flex-1 relative">
             <Input
               ref={inputRef}
