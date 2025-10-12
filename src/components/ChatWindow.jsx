@@ -22,6 +22,7 @@ import { studyGroupAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { formatDateSeparator } from "../lib/formatMessageTime";
+import GroupActionsPopup from "./GroupActionsPopup";
 
 function ChatWindow({
   activeChat,
@@ -33,6 +34,7 @@ function ChatWindow({
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showParticipantsPopup, setShowParticipantsPopup] = useState(false);
+  const [showActionsPopup, setShowActionsPopup] = useState(false);
   const [sending, setSending] = useState(false);
   const [participantsCount, setParticipantsCount] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -219,6 +221,7 @@ function ChatWindow({
             variant="ghost"
             size="icon"
             className="text-orange-normal hover:text-orange-dark"
+            onClick={() => setShowActionsPopup(true)}
           >
             <MoreHorizontal className="w-5 h-5" />
           </Button>
@@ -428,7 +431,7 @@ function ChatWindow({
               <Paperclip className="w-5 h-5" />
             </Button>
           </FileUploadDropdown>
-          
+
           <div className="flex-1 relative">
             <Input
               ref={inputRef}
@@ -472,6 +475,11 @@ function ChatWindow({
       <GroupParticipantsPopup
         isOpen={showParticipantsPopup}
         onClose={() => setShowParticipantsPopup(false)}
+        groupId={activeChat?.id}
+      />
+      <GroupActionsPopup
+        isOpen={showActionsPopup}
+        onClose={() => setShowActionsPopup(false)}
         groupId={activeChat?.id}
       />
     </div>
