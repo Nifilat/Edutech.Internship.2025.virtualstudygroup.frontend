@@ -3,7 +3,6 @@ import { Dialog, DialogContent } from "./ui/dialog";
 import { Button } from "./ui/button";
 import {
   ArrowLeft,
-  Users,
   BellOff,
   Loader2,
   Settings,
@@ -12,13 +11,13 @@ import {
   Link,
   LogOut,
   Monitor,
-  Info
+  Info,
 } from "lucide-react";
 import { studyGroupAPI } from "@/lib/api";
 import { toast } from "sonner";
 import GroupOverview from "../features/groupDetails/components/GroupOverview";
 import GroupPermissions from "../features/groupDetails/components/GroupPermissions";
-// import LeaveConfirmationPopup from "./LeaveConfirmationPopup";
+import LeaveGroupConfirmation from "../features/groupDetails/components/LeaveGroupConfirmation";
 import EditGroupName from "../features/groupDetails/components/EditGroupName";
 import EditGroupDescription from "../features/groupDetails/components/EditGroupDescription";
 import { formatGroupOverviewDateTime } from "@/lib/formatMessageTime";
@@ -37,7 +36,6 @@ const sidebarItems = [
 
 const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
   const [activeTab, setActiveTab] = useState("overview");
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
   const [showEditDescription, setShowEditDescription] = useState(false);
   const [groupData, setGroupData] = useState(null);
@@ -97,9 +95,17 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
             onEditDescription={() => setShowEditDescription(true)}
           />
         );
-          case "permission":
-            return <GroupPermissions />;
-          default:
+      case "permission":
+        return <GroupPermissions />;
+      case "leave":
+        return (
+          <LeaveGroupConfirmation onCancel={() => setActiveTab("overview")} />
+        );
+      case "media":
+        return <MediaTab />;
+      case "files":
+        return <FilesTab />;
+      default:
         return (
           <div className="p-6">
             <h3 className="text-xl font-bold">{activeTab}</h3>
@@ -114,27 +120,28 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl p-0" showCloseButton={false}>
+        <DialogContent
+          className="max-w-[589px] p-0 rounded-none"
+          showCloseButton={false}
+        >
           <div className="flex bg-white rounded-lg">
             {/* Sidebar */}
-            <div className="w-64 bg-orange-light rounded-l-lg p-4 flex flex-col justify-between">
+            <div className="w-44 bg-orange-light rounded-l-lg p-6 pl-2.5 flex flex-col justify-between">
               <div>
                 {sidebarItems.map((item) => (
                   <Button
                     key={item.id}
                     variant="ghost"
-                    className={`w-full justify-start text-black-normal font-medium mb-2 h-10 rounded-none ${
-                      activeTab === item.id ? "bg-orange-normal text-white-normal" : ""
+                    className={`w-full justify-start text-black-normal gap-0 hover:bg-orange-light-hover text-xs font-medium mb-2 h-10 rounded-none ${
+                      activeTab === item.id
+                        ? "bg-orange-normal text-white-normal"
+                        : ""
                     }`}
                     onClick={() => {
-                      if (item.id === "leave") {
-                        setShowLeaveConfirm(true);
-                      } else {
-                        setActiveTab(item.id);
-                      }
+                      setActiveTab(item.id);
                     }}
                   >
-                    <span className="w-5 h-5 mr-3 flex items-center justify-center">
+                    <span className="w-5 h-5 mr-1.5 flex items-center justify-center">
                       {item.icon}
                     </span>
                     {item.label}
@@ -161,10 +168,6 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
         </DialogContent>
       </Dialog>
       {/* Nested modals */}
-      {/* <LeaveConfirmationPopup
-        isOpen={showLeaveConfirm}
-        onClose={() => setShowLeaveConfirm(false)}
-      /> */}
       {groupData && (
         <>
           <EditGroupName
