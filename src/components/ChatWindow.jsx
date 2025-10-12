@@ -20,7 +20,7 @@ import FileUploadDropdown from "../features/chat/components/FileUploadModal";
 import { useAuth } from "@/hooks/useAuth";
 import { studyGroupAPI } from "@/lib/api";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { formatDateSeparator } from "../lib/formatMessageTime";
 import GroupActionsPopup from "./GroupActionsPopup";
 
@@ -38,6 +38,8 @@ function ChatWindow({
   const [sending, setSending] = useState(false);
   const [participantsCount, setParticipantsCount] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [messageSearchQuery, setMessageSearchQuery] = useState("");
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const { getUser } = useAuth();
@@ -157,14 +159,18 @@ function ChatWindow({
     );
   };
 
+  const filteredMessages = echoMessages.filter((msg) =>
+    msg.message.toLowerCase().includes(messageSearchQuery.toLowerCase())
+  );
+
   return (
     <div className="flex-1 flex flex-col">
       {/* Chat Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {renderChatAvatar()}
-          <div className="ml-3">
-            <h2 className="text-lg font-semibold text-gray-900">
+          <div className="ml-3 min-w-0">
+            <h2 className="text-lg font-semibold text-gray-900 truncate">
               {activeChat.name}
             </h2>
             <div className="flex items-center gap-2">
@@ -181,7 +187,6 @@ function ChatWindow({
           </div>
         </div>
 
-        {/* ✅ Live participant count */}
         <div className="flex items-center space-x-2">
           <Button
             variant="ghost"
@@ -214,6 +219,7 @@ function ChatWindow({
             variant="ghost"
             size="icon"
             className="text-orange-normal hover:text-orange-dark"
+            onClick={() => setIsSearching(!isSearching)}
           >
             <Search className="w-5 h-5" />
           </Button>
@@ -227,6 +233,28 @@ function ChatWindow({
           </Button>
         </div>
       </div>
+
+      {isSearching && (
+        <div className="p-4 border-b border-gray-200 flex items-center">
+          <Input
+            type="text"
+            placeholder="Search messages..."
+            value={messageSearchQuery}
+            onChange={(e) => setMessageSearchQuery(e.target.value)}
+            className="flex-1 mr-2 bg-gray-50 border-gray-200 rounded-full"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setIsSearching(false);
+              setMessageSearchQuery("");
+            }}
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+      )}
 
       {/* Pending Request Banner */}
       {activeChat.isGroup && activeChat.pendingRequest && (
@@ -249,11 +277,11 @@ function ChatWindow({
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-orange-normal" />
           </div>
-        ) : echoMessages && echoMessages.length > 0 ? (
+        ) : filteredMessages && filteredMessages.length > 0 ? (
           (() => {
             let lastDate = null;
 
-            return echoMessages.map((msg) => {
+            return filteredMessages.map((msg) => {
               const isOwn = msg.user_id == user?.id;
               const messageDate = msg.created_at
                 ? formatDateSeparator(msg.created_at)
@@ -264,18 +292,14 @@ function ChatWindow({
                 lastDate = messageDate;
               }
 
-              // Handle different user object formats
               let userName = "Unknown User";
               let userInitials = "U";
 
               if (msg.user) {
-                // Format 1: {first_name, last_name}
                 if (msg.user.first_name && msg.user.last_name) {
                   userName = `${msg.user.first_name} ${msg.user.last_name}`;
                   userInitials = `${msg.user.first_name[0]}${msg.user.last_name[0]}`;
-                }
-                // Format 2: {name}
-                else if (msg.user.name) {
+                } else if (msg.user.name) {
                   userName = msg.user.name;
                   const nameParts = msg.user.name.split(" ");
                   userInitials =
@@ -289,7 +313,6 @@ function ChatWindow({
 
               return (
                 <React.Fragment key={msg.id}>
-                  {/* Date Separator */}
                   {showDateSeparator && (
                     <div className="flex items-center justify-center my-4">
                       <div className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full">
@@ -298,7 +321,6 @@ function ChatWindow({
                     </div>
                   )}
 
-                  {/* Message */}
                   <div
                     className={`flex ${
                       isOwn ? "justify-end" : "justify-start"
@@ -348,34 +370,7 @@ function ChatWindow({
                           </p>
                           {isOwn && (
                             <div className="flex items-center ml-2">
-                              <svg
-                                className="w-3 h-3 text-gray-400"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                              <svg
-                                className={`w-3 h-3 ml-0.5 ${
-                                  msg.status === "read"
-                                    ? "text-blue-500"
-                                    : msg.status === "delivered"
-                                    ? "text-gray-400"
-                                    : "text-gray-300"
-                                }`}
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
+                              {/* Removed message status icons from here */}
                             </div>
                           )}
                         </div>
