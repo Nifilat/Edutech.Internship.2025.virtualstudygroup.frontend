@@ -48,7 +48,7 @@ export default GroupPermissions;
 const PermissionItem = ({ title, description, initialState }) => {
   const [isToggled, setIsToggled] = useState(initialState);
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-5">
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-[#414141]">{title}</p>
         {description && (
