@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { ArrowLeft, Users, BellOff, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Users,
+  BellOff,
+  Loader2,
+  Settings,
+  Image,
+  File,
+  Link,
+  LogOut,
+  Monitor,
+  Info
+} from "lucide-react";
 import { studyGroupAPI } from "@/lib/api";
 import { toast } from "sonner";
 import GroupOverview from "../features/groupDetails/components/GroupOverview";
-// import GroupPermissions from "./GroupPermissions";
+import GroupPermissions from "../features/groupDetails/components/GroupPermissions";
 // import LeaveConfirmationPopup from "./LeaveConfirmationPopup";
 import EditGroupName from "../features/groupDetails/components/EditGroupName";
 import EditGroupDescription from "../features/groupDetails/components/EditGroupDescription";
@@ -13,14 +25,14 @@ import { formatGroupOverviewDateTime } from "@/lib/formatMessageTime";
 
 // Icons for the sidebar
 const sidebarItems = [
-  { id: "overview", label: "Overview", icon: "i" },
-  { id: "screen_sharing", label: "Screen sharing", icon: "ScreenShare" },
-  { id: "media", label: "Media", icon: "Image" },
-  { id: "files", label: "Files", icon: "File" },
-  { id: "links", label: "Links", icon: "Link" },
-  { id: "mute", label: "Mute", icon: "BellOff" },
-  { id: "permission", label: "Permission", icon: "Lock" },
-  { id: "leave", label: "Leave", icon: "LogOut" },
+  { id: "overview", label: "Overview", icon: <Info /> },
+  { id: "screen_sharing", label: "Screen sharing", icon: <Monitor /> },
+  { id: "media", label: "Media", icon: <Image /> },
+  { id: "files", label: "Files", icon: <File /> },
+  { id: "links", label: "Links", icon: <Link /> },
+  { id: "mute", label: "Mute", icon: <BellOff /> },
+  { id: "permission", label: "Permission", icon: <Settings /> },
+  { id: "leave", label: "Leave", icon: <LogOut /> },
 ];
 
 const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
@@ -85,13 +97,13 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
             onEditDescription={() => setShowEditDescription(true)}
           />
         );
-        //   case "permission":
-        //     return <GroupPermissions />;
-        //   default:
+          case "permission":
+            return <GroupPermissions />;
+          default:
         return (
           <div className="p-6">
             <h3 className="text-xl font-bold">{activeTab}</h3>
-            <p className="text-gray-500 mt-2">
+            <p className="text-black-normal text-center text-lg mt-2">
               Content for {activeTab} goes here.
             </p>
           </div>
@@ -111,8 +123,8 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
                   <Button
                     key={item.id}
                     variant="ghost"
-                    className={`w-full justify-start text-black-normal font-semibold mb-2 h-10 ${
-                      activeTab === item.id ? "bg-orange-normal text-white" : ""
+                    className={`w-full justify-start text-black-normal font-medium mb-2 h-10 rounded-none ${
+                      activeTab === item.id ? "bg-orange-normal text-white-normal" : ""
                     }`}
                     onClick={() => {
                       if (item.id === "leave") {
@@ -122,11 +134,9 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
                       }
                     }}
                   >
-                    {item.icon === "i" && (
-                      <span className="w-5 h-5 mr-3 flex items-center justify-center border border-current rounded-full text-xs">
-                        i
-                      </span>
-                    )}
+                    <span className="w-5 h-5 mr-3 flex items-center justify-center">
+                      {item.icon}
+                    </span>
                     {item.label}
                   </Button>
                 ))}
