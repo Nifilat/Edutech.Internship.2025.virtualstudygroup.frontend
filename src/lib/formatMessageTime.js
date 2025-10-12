@@ -1,6 +1,6 @@
 // Format time for chat list (like WhatsApp sidebar)
 export function formatMessageTime(dateString) {
-  if (!dateString) return '';
+  if (!dateString) return "";
 
   const date = new Date(dateString);
   const now = new Date();
@@ -21,31 +21,39 @@ export function formatMessageTime(dateString) {
 
   if (isToday) {
     // Show only time for today (e.g., "2:30 PM")
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    return date.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   }
 
   if (isYesterday) {
     // Show "Yesterday" for yesterday
-    return 'Yesterday';
+    return "Yesterday";
   }
 
   // Show date in YYYY-MM-DD format for older messages
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
 // Format time for messages inside chat (just the time)
 export function formatMessageTimeInChat(dateString) {
-  if (!dateString) return '';
+  if (!dateString) return "";
   const date = new Date(dateString);
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 // Format date separator in chat window
 export function formatDateSeparator(dateString) {
-  if (!dateString) return '';
+  if (!dateString) return "";
 
   const date = new Date(dateString);
   const now = new Date();
@@ -62,32 +70,32 @@ export function formatDateSeparator(dateString) {
     date.getMonth() === yesterday.getMonth() &&
     date.getFullYear() === yesterday.getFullYear();
 
-  if (isToday) return 'Today';
-  if (isYesterday) return 'Yesterday';
+  if (isToday) return "Today";
+  if (isYesterday) return "Yesterday";
 
   // Show full date for older messages
   return date.toLocaleDateString([], {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
 
 // Format date and time for group overview
 export function formatGroupOverviewDateTime(dateString) {
-  if (!dateString) return { date: '', time: '' };
+  if (!dateString) return { date: "", time: "" };
   const date = new Date(dateString);
-  const formattedDate = date.toLocaleDateString('en-US', {
-    month: 'numeric',
-    day: 'numeric',
-    year: 'numeric',
+  const formattedDate = date.toLocaleDateString("en-US", {
+    month: "numeric",
+    day: "numeric",
+    year: "numeric",
   });
-  console.log(formattedDate);
-  const formattedTime = date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
+
+  const formattedTime = date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
     hour12: true,
   });
-  console.log(formattedTime);
+
   return { date: formattedDate, time: formattedTime };
 }
