@@ -8,8 +8,8 @@ const EditGroupName = ({ isOpen, onClose, initialName, onSave }) => {
   const [name, setName] = useState(initialName);
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm p-6">
-        <DialogTitle className="text-base font-medium mb-4">
+      <DialogContent className="max-w-96 w-full p-6 rounded-none">
+        <DialogTitle className="text-base font-medium mb-3">
           Group name
         </DialogTitle>
         <Input
