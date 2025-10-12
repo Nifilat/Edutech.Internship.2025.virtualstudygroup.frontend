@@ -64,6 +64,7 @@ const Chatroom = () => {
                 ),
                 avatar: null,
                 isGroup: true,
+                isPinned: false, // 👈 Added temporary isPinned state
                 unreadCount: group.unread_count || 0,
                 lastMessageFromMe: lastMessageFromMe,
                 lastMessageRead: lastMsg?.status === "read",
@@ -76,15 +77,14 @@ const Chatroom = () => {
               };
             })
             .sort((a, b) => {
-              // Sort by most recent message time only
               const timeA = new Date(a.time);
               const timeB = new Date(b.time);
-              return timeB - timeA; // Most recent first
+              return timeB - timeA;
             });
 
           setChats(transformed);
           if (transformed.length > 0) {
-            setSelectedChat(transformed[0]); // auto-select first group
+            setSelectedChat(transformed[0]);
           }
         }
       } catch (err) {
@@ -99,48 +99,48 @@ const Chatroom = () => {
 
   // 🔹 Fetch messages when selectedChat changes
   useEffect(() => {
-  const fetchMessages = async () => {
-    if (!selectedChat?.id) return;
+    const fetchMessages = async () => {
+      if (!selectedChat?.id) return;
 
-    clearMessages();
+      clearMessages();
 
-    try {
-      const data = await chatAPI.getMessages(selectedChat.id);
-      const formatted = (data || []).map((msg) => ({
-        ...msg,
-        created_at: new Date(msg.created_at).toISOString(),
-      }));
+      try {
+        const data = await chatAPI.getMessages(selectedChat.id);
+        const formatted = (data || []).map((msg) => ({
+          ...msg,
+          created_at: new Date(msg.created_at).toISOString(),
+        }));
 
-      initializeMessages([...formatted].reverse());
+        initializeMessages([...formatted].reverse());
 
-      setChats((prevChats) =>
-        prevChats.map((chat) =>
-          chat.id === selectedChat.id ? { ...chat, unreadCount: 0 } : chat
-        )
-      );
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === selectedChat.id ? { ...chat, unreadCount: 0 } : chat
+          )
+        );
 
-      setTimeout(() => {
-        formatted.forEach((msg) => {
-          if (msg.user_id != user?.id) {
-            updateMessageStatus(msg.id, "read");
-          }
-        });
-      }, 1000);
-    } catch (err) {
-      console.error("Error fetching messages:", err);
-      toast.error("Failed to load messages");
-      initializeMessages([]);
-    }
-  };
+        setTimeout(() => {
+          formatted.forEach((msg) => {
+            if (msg.user_id != user?.id) {
+              updateMessageStatus(msg.id, "read");
+            }
+          });
+        }, 1000);
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+        toast.error("Failed to load messages");
+        initializeMessages([]);
+      }
+    };
 
-  fetchMessages();
-}, [
-  selectedChat?.id,
-  clearMessages,
-  initializeMessages,
-  updateMessageStatus, // ✅ Add this
-]);
-
+    fetchMessages();
+  }, [
+    selectedChat?.id,
+    clearMessages,
+    initializeMessages,
+    updateMessageStatus,
+    user?.id,
+  ]);
 
   // 🔹 Update chat list when new messages arrive
   useEffect(() => {
@@ -162,7 +162,6 @@ const Chatroom = () => {
             lastMessageFromMe: isFromMe,
             lastMessageRead: lastMessage.status === "read",
             lastMessageDelivered: lastMessage.status === "delivered",
-            // Only increment unread if NOT from me and NOT currently viewing this chat
             unreadCount:
               !isFromMe && !isActiveChat
                 ? (chat.unreadCount || 0) + 1
@@ -173,17 +172,10 @@ const Chatroom = () => {
         }
         return chat;
       });
-
-      // Sort chats: unread first, then by most recent message time
-      return updatedChats.sort((a, b) => {
-        if (b.unreadCount !== a.unreadCount) {
-          return b.unreadCount - a.unreadCount;
-        }
-        return new Date(b.time) - new Date(a.time);
-      });
+      // Sorting is now handled in ChatSidebar
+      return updatedChats;
     });
 
-    // Mark messages as read if they're in the current chat
     if (
       lastMessage.group_id === selectedChat?.id &&
       lastMessage.user_id != user?.id
@@ -195,7 +187,6 @@ const Chatroom = () => {
   }, [echoMessages, user?.id, selectedChat?.id]);
 
   // 🔹 Handle send message
-  // 🔹 Handle send message
   const handleSendMessage = async (messageText) => {
     if (!selectedChat?.id) return;
 
@@ -205,13 +196,20 @@ const Chatroom = () => {
       if (!response?.data) {
         throw new Error("Failed to send message");
       }
-
-      // ✅ Message will appear via WebSocket automatically - no manual adding
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
       throw error;
     }
+  };
+
+  // 🔹 Handle pin toggle
+  const handlePinToggle = (chatId) => {
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === chatId ? { ...chat, isPinned: !chat.isPinned } : chat
+      )
+    );
   };
 
   if (loadingChats) {
@@ -237,6 +235,7 @@ const Chatroom = () => {
             setSearchQuery={setSearchQuery}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            onPinToggle={handlePinToggle}
           />
           <ChatWindow
             activeChat={selectedChat}
