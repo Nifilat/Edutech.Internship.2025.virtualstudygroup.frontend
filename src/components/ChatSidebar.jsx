@@ -4,24 +4,32 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import ChatListItem from "./ChatListItem";
 
-function ChatSidebar({ 
-  chats, 
-  activeChat, 
-  setActiveChat, 
-  searchQuery, 
-  setSearchQuery, 
-  activeTab, 
-  setActiveTab 
+function ChatSidebar({
+  chats,
+  activeChat,
+  setActiveChat,
+  searchQuery,
+  setSearchQuery,
+  activeTab,
+  setActiveTab,
+  onPinToggle,
 }) {
-  const filteredChats = chats.filter(chat => {
-    const matchesSearch = chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredChats = chats.filter((chat) => {
+    const matchesSearch =
+      chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (activeTab === 'Unread') {
+
+    if (activeTab === "Unread") {
       return matchesSearch && chat.unreadCount > 0;
     }
-    
+
     return matchesSearch;
+  });
+
+  const sortedChats = filteredChats.sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return new Date(b.time) - new Date(a.time);
   });
 
   return (
@@ -43,21 +51,21 @@ function ChatSidebar({
       {/* Chat/Unread Tabs */}
       <div className="flex border-b border-gray-200">
         <button
-          onClick={() => setActiveTab('Chat')}
+          onClick={() => setActiveTab("Chat")}
           className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-            activeTab === 'Chat'
-              ? 'text-white bg-orange-normal'
-              : 'text-gray-600 hover:text-gray-800'
+            activeTab === "Chat"
+              ? "text-white bg-orange-normal"
+              : "text-gray-600 hover:text-gray-800"
           }`}
         >
           Chat
         </button>
         <button
-          onClick={() => setActiveTab('Unread')}
+          onClick={() => setActiveTab("Unread")}
           className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-            activeTab === 'Unread'
-              ? 'text-white bg-orange-normal'
-              : 'text-gray-600 hover:text-gray-800'
+            activeTab === "Unread"
+              ? "text-white bg-orange-normal"
+              : "text-gray-600 hover:text-gray-800"
           }`}
         >
           Unread
@@ -66,17 +74,18 @@ function ChatSidebar({
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredChats.length === 0 ? (
+        {sortedChats.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
-            {activeTab === 'Unread' ? 'No unread messages' : 'No chats found'}
+            {activeTab === "Unread" ? "No unread messages" : "No chats found"}
           </div>
         ) : (
-          filteredChats.map((chat) => (
+          sortedChats.map((chat) => (
             <ChatListItem
               key={chat.id}
               chat={chat}
               isActive={activeChat?.id === chat.id}
-              onClick={() => setActiveChat(chat)}
+              onClick={setActiveChat}
+              onPinToggle={onPinToggle}
             />
           ))
         )}
