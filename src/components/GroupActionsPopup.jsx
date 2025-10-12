@@ -20,6 +20,8 @@ import GroupPermissions from "../features/groupDetails/components/GroupPermissio
 import LeaveGroupConfirmation from "../features/groupDetails/components/LeaveGroupConfirmation";
 import EditGroupName from "../features/groupDetails/components/EditGroupName";
 import EditGroupDescription from "../features/groupDetails/components/EditGroupDescription";
+import MediaTab from "../features/groupDetails/components/MediaTab";
+import FilesTab from "../features/groupDetails/components/FilesTab";
 import { formatGroupOverviewDateTime } from "@/lib/formatMessageTime";
 
 // Icons for the sidebar
