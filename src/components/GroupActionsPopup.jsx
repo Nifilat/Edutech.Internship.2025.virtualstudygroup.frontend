@@ -8,7 +8,7 @@ import GroupOverview from "../features/groupDetails/components/GroupOverview";
 // import GroupPermissions from "./GroupPermissions";
 // import LeaveConfirmationPopup from "./LeaveConfirmationPopup";
 import EditGroupName from "../features/groupDetails/components/EditGroupName";
-// import EditGroupDescription from "./EditGroupDescription";
+import EditGroupDescription from "../features/groupDetails/components/EditGroupDescription";
 import { formatGroupOverviewDateTime } from "@/lib/formatMessageTime";
 
 // Icons for the sidebar
@@ -163,12 +163,12 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
             initialName={groupData.name}
             onSave={handleSaveName}
           />
-          {/* <EditGroupDescription
+          <EditGroupDescription
             isOpen={showEditDescription}
             onClose={() => setShowEditDescription(false)}
             initialDescription={groupData.description}
             onSave={handleSaveDescription}
-          /> */}
+          />
         </>
       )}
     </>
