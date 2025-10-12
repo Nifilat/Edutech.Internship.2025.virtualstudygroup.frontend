@@ -170,7 +170,7 @@ function ChatWindow({
         <div className="flex items-center gap-3">
           {renderChatAvatar()}
           <div className="ml-3 min-w-0">
-            <h2 className="text-lg font-semibold text-gray-900 truncate">
+            <h2 className="text-lg font-medium text-black-normal truncate">
               {activeChat.name}
             </h2>
             <div className="flex items-center gap-2">
@@ -180,7 +180,7 @@ function ChatWindow({
               {isEchoConnected && (
                 <span className="text-xs text-green-500 flex items-center">
                   <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                  Live
+                  Online
                 </span>
               )}
             </div>
