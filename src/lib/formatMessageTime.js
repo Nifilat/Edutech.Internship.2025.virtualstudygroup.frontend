@@ -72,3 +72,22 @@ export function formatDateSeparator(dateString) {
     day: 'numeric'
   });
 }
+
+// Format date and time for group overview
+export function formatGroupOverviewDateTime(dateString) {
+  if (!dateString) return { date: '', time: '' };
+  const date = new Date(dateString);
+  const formattedDate = date.toLocaleDateString('en-US', {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  console.log(formattedDate);
+  const formattedTime = date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  console.log(formattedTime);
+  return { date: formattedDate, time: formattedTime };
+}
