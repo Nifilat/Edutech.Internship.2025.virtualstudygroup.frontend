@@ -219,7 +219,6 @@ export const usePusherChat = (groupId) => {
   }, []);
 
   const updateMessageStatus = useCallback((messageId, status) => {
-    console.log(`🔄 Updating message ${messageId} status to: ${status}`);
     setMessages((prev) =>
       prev.map((msg) => (msg.id === messageId ? { ...msg, status } : msg))
     );
