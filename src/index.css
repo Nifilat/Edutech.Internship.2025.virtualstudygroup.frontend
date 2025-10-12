@@ -75,6 +75,7 @@
   /* Gray Color Palette */
   --grey-light: #F8F8F8;
   --grey-light-active: #E9E9E9;
+  --grey-normal-hover: #A7A7A7;
   --grey-dark-active: #535353;
 }
 
@@ -139,6 +140,7 @@
 
   --color-grey-light: var(--grey-light);
   --color-grey-light-active: var(--grey-light-active);
+  --color-grey-normal-hover: var(--grey-normal-hover);
   --color-grey-dark-active: var(--grey-dark-active);
 }
 
