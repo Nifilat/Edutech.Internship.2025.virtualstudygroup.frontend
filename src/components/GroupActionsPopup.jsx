@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import GroupOverview from "../features/groupDetails/components/GroupOverview";
 // import GroupPermissions from "./GroupPermissions";
 // import LeaveConfirmationPopup from "./LeaveConfirmationPopup";
-// import EditGroupName from "./EditGroupName";
+import EditGroupName from "../features/groupDetails/components/EditGroupName";
 // import EditGroupDescription from "./EditGroupDescription";
 import { formatGroupOverviewDateTime } from "@/lib/formatMessageTime";
 
@@ -56,14 +56,14 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
 
   const handleSaveName = (newName) => {
     // API call to save new name
-    console.log("Saving new name:", newName);
+    toast.success("Group name updated successfully.");
     setGroupData((prev) => ({ ...prev, name: newName }));
     setShowEditName(false);
   };
 
   const handleSaveDescription = (newDescription) => {
     // API call to save new description
-    console.log("Saving new description:", newDescription);
+    toast.success("Group description updated successfully.");
     setGroupData((prev) => ({ ...prev, description: newDescription }));
     setShowEditDescription(false);
   };
@@ -85,13 +85,15 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
             onEditDescription={() => setShowEditDescription(true)}
           />
         );
-    //   case "permission":
-    //     return <GroupPermissions />;
-    //   default:
+        //   case "permission":
+        //     return <GroupPermissions />;
+        //   default:
         return (
           <div className="p-6">
             <h3 className="text-xl font-bold">{activeTab}</h3>
-            <p className="text-gray-500 mt-2">Content for {activeTab} goes here.</p>
+            <p className="text-gray-500 mt-2">
+              Content for {activeTab} goes here.
+            </p>
           </div>
         );
     }
@@ -152,7 +154,7 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
       {/* <LeaveConfirmationPopup
         isOpen={showLeaveConfirm}
         onClose={() => setShowLeaveConfirm(false)}
-      />
+      /> */}
       {groupData && (
         <>
           <EditGroupName
@@ -161,14 +163,14 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
             initialName={groupData.name}
             onSave={handleSaveName}
           />
-          <EditGroupDescription
+          {/* <EditGroupDescription
             isOpen={showEditDescription}
             onClose={() => setShowEditDescription(false)}
             initialDescription={groupData.description}
             onSave={handleSaveDescription}
-          />
+          /> */}
         </>
-      )} */}
+      )}
     </>
   );
 };
