@@ -115,7 +115,7 @@ export const studyGroupAPI = {
       });
       return response.data;
     } catch (error) {
-      // Normalize error response for consistent handling in the component
+    
       return {
         status: "error",
         message: error.response?.data?.message || "Failed to add group member",
