@@ -9,7 +9,7 @@ function ParticipantsList({
   participants,
   onParticipantsChange,
   onClose,
-  onAddMember, // optional callback to actually add a member on the backend
+  onAddMember, 
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState([
@@ -76,7 +76,7 @@ function ParticipantsList({
           const response = await onAddMember(member);
   
           // ✅ Fail immediately if backend returns error
-          if (response?.status !== "success") {
+          if (!response?.member) {
             allSuccess = false;
             throw new Error(response?.message || "Failed to add member");
           }
