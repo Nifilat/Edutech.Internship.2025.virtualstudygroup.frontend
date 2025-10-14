@@ -7,14 +7,17 @@ import { UserPlus, Link, LogOut, ChevronRight } from "lucide-react";
 import { studyGroupAPI } from "@/lib/api";
 import { Loader as Loader2 } from "lucide-react";
 import ParticipantsList from "./ParticipantsList";
-import {
-  DeleteConfirmationPopup
-} from "./MemberActionsPopup";
+import { DeleteConfirmationPopup } from "./MemberActionsPopup";
 import MemberActionsPopup from "./MemberActionsPopup";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
+const GroupParticipantsPopup = ({
+  isOpen,
+  onClose,
+  groupId,
+  onTriggerLeaveFlow,
+}) => {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openAddModal, setOpenAddModal] = useState(false);
@@ -84,11 +87,9 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
     try {
       // Add member via API (student_id maps to selectedUser.id)
       const resp = await studyGroupAPI.addGroupMember(groupId, selectedUser.id);
-      // resp is expected to be response.data (per your api.js)
       return resp;
     } catch (error) {
       console.error("Add member API error:", error);
-      // Return shape checked by ParticipantsList; include message
       return {
         status: "error",
         message: error.response?.data?.message || "Request failed",
@@ -100,7 +101,6 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
     if (!memberToDelete) return;
 
     try {
-      // Example API call
       await studyGroupAPI.removeGroupMember(groupId, memberToDelete.id);
       toast.success(`${memberToDelete.name} has been removed from the group`);
 
@@ -193,7 +193,7 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
               )}
             </div>
 
-            {/* Action Buttons (only admins can see Add / Invite) */}
+            {/* Action Buttons */}
             <div className="p-4 border-t border-gray-100 space-y-3">
               {(currentUserRole === "Leader" ||
                 currentUserRole === "Admin") && (
@@ -220,6 +220,7 @@ const GroupParticipantsPopup = ({ isOpen, onClose, groupId }) => {
               <Button
                 variant="ghost"
                 className="w-full justify-start font-semibold text-red-600 hover:bg-red-50 h-auto py-3"
+                onClick={onTriggerLeaveFlow}
               >
                 <LogOut className="w-5 h-5 mr-3" />
                 Leave
