@@ -30,6 +30,7 @@ function ChatWindow({
   isEchoConnected,
   isLoadingMessages,
   onSendMessage,
+  onRestrictionUpdate,
 }) {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -45,7 +46,6 @@ function ChatWindow({
   const { getUser } = useAuth();
   const user = getUser();
 
-  // ✅ Fetch participant count when chat changes
   useEffect(() => {
     const fetchParticipantsCount = async () => {
       if (!activeChat?.id || !activeChat.isGroup) return;
@@ -69,7 +69,6 @@ function ChatWindow({
     setAutoScroll(isAtBottom);
   };
 
-  // ✅ Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (autoScroll) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -94,7 +93,7 @@ function ChatWindow({
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
-      setMessage(messageText); // Restore message on error
+      setMessage(messageText);
     } finally {
       setSending(false);
     }
@@ -107,9 +106,6 @@ function ChatWindow({
       ...files.map((f) => ({ file: f, type })),
     ]);
     toast.success(`${files.length} file(s) selected`);
-
-    // TODO: Upload files to your backend here
-    // Example: await uploadFiles(files);
   };
 
   const handleInputKeyDown = (e) => {
@@ -159,9 +155,19 @@ function ChatWindow({
     );
   };
 
+  const handleOpenActionsToLeave = () => {
+    setShowParticipantsPopup(false);
+    setShowActionsPopup(true);
+  };
+
   const filteredMessages = echoMessages.filter((msg) =>
     msg.message.toLowerCase().includes(messageSearchQuery.toLowerCase())
   );
+
+  const isChatRestrictedForUser =
+    activeChat.is_restricted &&
+    activeChat.currentUserRole !== "Leader" &&
+    activeChat.currentUserRole !== "Admin";
 
   return (
     <div className="flex-1 flex flex-col">
@@ -389,93 +395,101 @@ function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center space-x-2">
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-gray-400 hover:text-gray-600"
-              type="button"
-              aria-label="Add emoji"
-              onClick={() => setShowEmojiPicker((v) => !v)}
-            >
-              <img src="/smile.png" alt="Smile" className="w-5 h-5" />
-            </Button>
-            {showEmojiPicker && (
-              <div className="absolute z-50 bottom-12 left-0">
-                <Picker
-                  data={data}
-                  onEmojiSelect={handleEmojiSelect}
-                  theme="light"
-                  previewPosition="none"
-                />
-              </div>
-            )}
-          </div>
-          <FileUploadDropdown
-            onFileSelect={handleFileSelect}
-            disabled={sending}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <Paperclip className="w-5 h-5" />
-            </Button>
-          </FileUploadDropdown>
-
-          <div className="flex-1 relative">
-            <Input
-              ref={inputRef}
-              type="text"
-              placeholder="Type message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleInputKeyDown}
-              aria-label="Type your message"
-              disabled={sending}
-              className="pr-20 bg-gray-50 border-gray-200 rounded-full"
-            />
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+      {/* Message Input: Conditionally Rendered */}
+      {isChatRestrictedForUser ? (
+        <div className="p-4 border-t border-gray-200 text-center bg-gray-50">
+          <p className="text-sm text-gray-500">Only admins can send message</p>
+        </div>
+      ) : (
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex items-center space-x-2">
+            <div className="relative">
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-gray-400 hover:text-gray-600 w-8 h-8"
-                disabled={sending}
+                className="text-gray-400 hover:text-gray-600"
+                type="button"
+                aria-label="Add emoji"
+                onClick={() => setShowEmojiPicker((v) => !v)}
               >
-                <Mic className="w-4 h-4" />
+                <img src="/smile.png" alt="Smile" className="w-5 h-5" />
               </Button>
+              {showEmojiPicker && (
+                <div className="absolute z-50 bottom-12 left-0">
+                  <Picker
+                    data={data}
+                    onEmojiSelect={handleEmojiSelect}
+                    theme="light"
+                    previewPosition="none"
+                  />
+                </div>
+              )}
+            </div>
+            <FileUploadDropdown
+              onFileSelect={handleFileSelect}
+              disabled={sending}
+            >
               <Button
-                variant={"ghost"}
-                onClick={handleSendMessage}
+                variant="ghost"
                 size="icon"
-                className="bg-inherit"
-                disabled={!message.trim() || sending}
-                aria-label="Send message"
+                className="text-gray-400 hover:text-gray-600"
               >
-                {sending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="" />
-                )}
+                <Paperclip className="w-5 h-5" />
               </Button>
+            </FileUploadDropdown>
+
+            <div className="flex-1 relative">
+              <Input
+                ref={inputRef}
+                type="text"
+                placeholder="Type message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleInputKeyDown}
+                aria-label="Type your message"
+                disabled={sending}
+                className="pr-20 bg-gray-50 border-gray-200 rounded-full"
+              />
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-gray-400 hover:text-gray-600 w-8 h-8"
+                  disabled={sending}
+                >
+                  <Mic className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={"ghost"}
+                  onClick={handleSendMessage}
+                  size="icon"
+                  className="bg-inherit"
+                  disabled={!message.trim() || sending}
+                  aria-label="Send message"
+                >
+                  {sending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <GroupParticipantsPopup
         isOpen={showParticipantsPopup}
         onClose={() => setShowParticipantsPopup(false)}
         groupId={activeChat?.id}
+        onLeaveGroup={() => setShowActionsPopup(true)}
       />
       <GroupActionsPopup
         isOpen={showActionsPopup}
         onClose={() => setShowActionsPopup(false)}
         groupId={activeChat?.id}
+        onRestrictionUpdate={onRestrictionUpdate}
       />
     </div>
   );
