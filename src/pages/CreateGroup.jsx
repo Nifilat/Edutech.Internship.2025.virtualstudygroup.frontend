@@ -25,13 +25,40 @@ const CreateGroup = ({ onGroupCreated }) => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetchingCourses, setFetchingCourses] = useState(false);
+  const [allGroups, setAllGroups] = useState([]);
+
+  useEffect(() => {
+    const fetchValidationData = async () => {
+      try {
+        // Fetch both the public study rooms and the user's own groups
+        const [roomsResponse, userGroupsResponse] = await Promise.all([
+          studyGroupAPI.getAllStudyRooms(),
+          studyGroupAPI.getUserGroups(),
+        ]);
+
+        const publicRooms = roomsResponse?.data || [];
+        const userGroups = userGroupsResponse?.data || [];
+
+        // Combine them into a single list, ensuring no duplicates
+        const combinedGroupsMap = new Map();
+        [...publicRooms, ...userGroups].forEach((group) => {
+          combinedGroupsMap.set(group.id, group);
+        });
+
+        setAllGroups(Array.from(combinedGroupsMap.values()));
+      } catch (error) {
+        console.error("Failed to fetch all groups for validation:", error);
+        // This is not a critical failure, the backend will still validate.
+      }
+    };
+    fetchValidationData();
+  }, []);
 
   useEffect(() => {
     const fetchCourses = async () => {
       setFetchingCourses(true);
       try {
         const data = await studyGroupAPI.getCourses();
-        console.log("Courses response:", data);
 
         // Handle both response structures
         const coursesList = Array.isArray(data) ? data : data?.data || [];
@@ -75,6 +102,30 @@ const CreateGroup = ({ onGroupCreated }) => {
       return;
     }
 
+    const course = courses.find((c) => c.id.toString() === selectedCourse);
+    if (!course) {
+      toast.error("Invalid course selected. Please try again.");
+      return;
+    }
+
+    // 1. Construct the final name as the backend would.
+    const finalGroupName = `${course.course_code} - ${groupName.trim()}`;
+
+    // 2. Perform the check using this final, correct name.
+    if (allGroups.length > 0) {
+      const isDuplicateName = allGroups.some(
+        (group) =>
+          group.group_name.trim().toLowerCase() === finalGroupName.toLowerCase()
+      );
+
+      if (isDuplicateName) {
+        toast.error(
+          "A group with this name already exists. Please choose another name."
+        );
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const payload = {
@@ -83,8 +134,6 @@ const CreateGroup = ({ onGroupCreated }) => {
         description: groupDescription.trim(),
         members: participants.map((p) => p.id),
       };
-
-      console.log("Create group payload:", payload);
 
       const response = await studyGroupAPI.create(payload);
 
