@@ -27,7 +27,7 @@ const Chatroom = () => {
     updateMessageStatus,
   } = usePusherChat(selectedChat?.id || null);
 
-  // 🔹 Fetch user's study groups
+  //  Fetch user's study groups (initial load)
   useEffect(() => {
     const fetchGroups = async () => {
       setLoadingChats(true);
@@ -46,8 +46,6 @@ const Chatroom = () => {
             .filter((group) => group && group.id)
             .map((group) => {
               const course = coursesMap.get(group.course_id);
-
-              // Get last message info if available
               const lastMsg = group.last_message;
               const lastMessageFromMe = lastMsg?.user_id == user?.id;
 
@@ -64,11 +62,14 @@ const Chatroom = () => {
                 ),
                 avatar: null,
                 isGroup: true,
-                isPinned: false, // 👈 Added temporary isPinned state
+                isPinned: false,
                 unreadCount: group.unread_count || 0,
                 lastMessageFromMe: lastMessageFromMe,
                 lastMessageRead: lastMsg?.status === "read",
                 lastMessageDelivered: lastMsg?.status === "delivered",
+                is_restricted: group.is_restricted || false,
+                // Role might be missing here, we'll fetch it on selection
+                currentUserRole: group.current_user_role || "Member",
                 pendingRequest:
                   Number(group.created_by) === Number(user?.id) &&
                   group.pending_requests?.length > 0
@@ -97,11 +98,37 @@ const Chatroom = () => {
     fetchGroups();
   }, [user?.id]);
 
-  // 🔹 Fetch messages when selectedChat changes
+  // ✨ NEW: Fetch detailed group info when a chat is selected
+  useEffect(() => {
+    const fetchRoleAndDetails = async () => {
+      if (!selectedChat?.id || !user?.id) return;
+
+      try {
+        const { data } = await studyGroupAPI.getGroupDetails(selectedChat.id);
+        const members = data?.members || [];
+        const currentMember = members.find((m) => m.user.id === user.id);
+        const role = currentMember?.role || "Member";
+
+        // Update selectedChat with the accurate role
+        setSelectedChat((prev) => {
+          if (prev && prev.id === selectedChat.id) {
+            return { ...prev, currentUserRole: role };
+          }
+          return prev;
+        });
+      } catch (error) {
+        console.error("Failed to fetch group details for role:", error);
+      }
+    };
+
+    fetchRoleAndDetails();
+  }, [selectedChat?.id, user?.id]);
+
+
+  // Fetch messages when selectedChat changes
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedChat?.id) return;
-
       clearMessages();
 
       try {
@@ -142,7 +169,7 @@ const Chatroom = () => {
     user?.id,
   ]);
 
-  // 🔹 Update chat list when new messages arrive
+  // Update chat list when new messages arrive
   useEffect(() => {
     if (!echoMessages || echoMessages.length === 0) return;
 
@@ -172,7 +199,6 @@ const Chatroom = () => {
         }
         return chat;
       });
-      // Sorting is now handled in ChatSidebar
       return updatedChats;
     });
 
@@ -186,13 +212,11 @@ const Chatroom = () => {
     }
   }, [echoMessages, user?.id, selectedChat?.id]);
 
-  // 🔹 Handle send message
+  // Handle send message
   const handleSendMessage = async (messageText) => {
     if (!selectedChat?.id) return;
-
     try {
       const response = await chatAPI.sendMessage(selectedChat.id, messageText);
-
       if (!response?.data) {
         throw new Error("Failed to send message");
       }
@@ -203,13 +227,25 @@ const Chatroom = () => {
     }
   };
 
-  // 🔹 Handle pin toggle
+  // Handle pin toggle
   const handlePinToggle = (chatId) => {
     setChats((prevChats) =>
       prevChats.map((chat) =>
         chat.id === chatId ? { ...chat, isPinned: !chat.isPinned } : chat
       )
     );
+  };
+
+  // Handle restriction update from child components
+  const handleRestrictionUpdate = (chatId, isRestricted) => {
+    setChats(prevChats =>
+        prevChats.map(chat =>
+            chat.id === chatId ? { ...chat, is_restricted: isRestricted } : chat
+        )
+    );
+    if (selectedChat?.id === chatId) {
+        setSelectedChat(prev => ({ ...prev, is_restricted: isRestricted }));
+    }
   };
 
   if (loadingChats) {
@@ -243,6 +279,7 @@ const Chatroom = () => {
             isEchoConnected={isEchoConnected}
             isLoadingMessages={isLoadingMessages}
             onSendMessage={handleSendMessage}
+            onRestrictionUpdate={handleRestrictionUpdate}
           />
         </>
       ) : (
