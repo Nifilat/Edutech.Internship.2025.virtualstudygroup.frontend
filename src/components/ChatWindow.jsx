@@ -31,11 +31,14 @@ function ChatWindow({
   isLoadingMessages,
   onSendMessage,
   onRestrictionUpdate,
+  onLeaveGroupSuccess,
 }) {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showParticipantsPopup, setShowParticipantsPopup] = useState(false);
   const [showActionsPopup, setShowActionsPopup] = useState(false);
+  const [actionsPopupInitialTab, setActionsPopupInitialTab] =
+    useState("overview");
   const [sending, setSending] = useState(false);
   const [participantsCount, setParticipantsCount] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -83,7 +86,6 @@ function ChatWindow({
 
   const handleSendMessage = async () => {
     if (!message.trim() || !activeChat) return;
-
     const messageText = message.trim();
     setMessage("");
     setSending(true);
@@ -113,6 +115,19 @@ function ChatWindow({
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleTriggerLeaveFlow = () => {
+    setShowParticipantsPopup(false);
+    setActionsPopupInitialTab("leave");
+    setShowActionsPopup(true);
+  };
+
+  const handleLeaveSuccessAndClosePopup = (groupId) => {
+    if (onLeaveGroupSuccess) {
+      onLeaveGroupSuccess(groupId);
+    }
+    setShowActionsPopup(false);
   };
 
   if (!activeChat) {
@@ -153,11 +168,6 @@ function ChatWindow({
         </AvatarFallback>
       </Avatar>
     );
-  };
-
-  const handleOpenActionsToLeave = () => {
-    setShowParticipantsPopup(false);
-    setShowActionsPopup(true);
   };
 
   const filteredMessages = echoMessages.filter((msg) =>
@@ -233,7 +243,10 @@ function ChatWindow({
             variant="ghost"
             size="icon"
             className="text-orange-normal hover:text-orange-dark"
-            onClick={() => setShowActionsPopup(true)}
+            onClick={() => {
+              setActionsPopupInitialTab("overview");
+              setShowActionsPopup(true);
+            }}
           >
             <MoreHorizontal className="w-5 h-5" />
           </Button>
@@ -286,21 +299,17 @@ function ChatWindow({
         ) : filteredMessages && filteredMessages.length > 0 ? (
           (() => {
             let lastDate = null;
-
             return filteredMessages.map((msg) => {
               const isOwn = msg.user_id == user?.id;
               const messageDate = msg.created_at
                 ? formatDateSeparator(msg.created_at)
                 : null;
               const showDateSeparator = messageDate && messageDate !== lastDate;
-
               if (showDateSeparator) {
                 lastDate = messageDate;
               }
-
               let userName = "Unknown User";
               let userInitials = "U";
-
               if (msg.user) {
                 if (msg.user.first_name && msg.user.last_name) {
                   userName = `${msg.user.first_name} ${msg.user.last_name}`;
@@ -314,9 +323,7 @@ function ChatWindow({
                       : nameParts[0][0];
                 }
               }
-
               const userAvatar = msg.user?.avatar_url || null;
-
               return (
                 <React.Fragment key={msg.id}>
                   {showDateSeparator && (
@@ -326,7 +333,6 @@ function ChatWindow({
                       </div>
                     </div>
                   )}
-
                   <div
                     className={`flex ${
                       isOwn ? "justify-end" : "justify-start"
@@ -374,11 +380,6 @@ function ChatWindow({
                                 )
                               : ""}
                           </p>
-                          {isOwn && (
-                            <div className="flex items-center ml-2">
-                              {/* Removed message status icons from here */}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -483,13 +484,18 @@ function ChatWindow({
         isOpen={showParticipantsPopup}
         onClose={() => setShowParticipantsPopup(false)}
         groupId={activeChat?.id}
-        onLeaveGroup={() => setShowActionsPopup(true)}
+        onTriggerLeaveFlow={handleTriggerLeaveFlow}
       />
       <GroupActionsPopup
         isOpen={showActionsPopup}
-        onClose={() => setShowActionsPopup(false)}
+        onClose={() => {
+          setShowActionsPopup(false);
+          setActionsPopupInitialTab("overview");
+        }}
         groupId={activeChat?.id}
         onRestrictionUpdate={onRestrictionUpdate}
+        initialTab={actionsPopupInitialTab}
+        onLeaveSuccess={handleLeaveSuccessAndClosePopup}
       />
     </div>
   );
