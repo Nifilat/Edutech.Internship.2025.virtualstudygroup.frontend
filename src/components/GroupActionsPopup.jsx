@@ -23,25 +23,31 @@ import EditGroupDescription from "../features/groupDetails/components/EditGroupD
 import MediaTab from "../features/groupDetails/components/MediaTab";
 import FilesTab from "../features/groupDetails/components/FilesTab";
 import { formatGroupOverviewDateTime } from "@/lib/formatMessageTime";
+import { useAuth } from "@/hooks/useAuth"; // Import useAuth
 
 // Icons for the sidebar
-const sidebarItems = [
+const baseSidebarItems = [
   { id: "overview", label: "Overview", icon: <Info /> },
   { id: "screen_sharing", label: "Screen sharing", icon: <Monitor /> },
   { id: "media", label: "Media", icon: <Image /> },
   { id: "files", label: "Files", icon: <File /> },
   { id: "links", label: "Links", icon: <Link /> },
   { id: "mute", label: "Mute", icon: <BellOff /> },
-  { id: "permission", label: "Permission", icon: <Settings /> },
+  { id: "permission", label: "Permission", icon: <Settings />, adminOnly: true },
   { id: "leave", label: "Leave", icon: <LogOut /> },
 ];
 
-const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
+const GroupActionsPopup = ({ isOpen, onClose, groupId, onRestrictionUpdate }) => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showEditName, setShowEditName] = useState(false);
   const [showEditDescription, setShowEditDescription] = useState(false);
   const [groupData, setGroupData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [sidebarItems, setSidebarItems] = useState(baseSidebarItems);
+
+  const { getUser } = useAuth();
+  const user = getUser();
 
   useEffect(() => {
     const fetchGroupData = async () => {
@@ -55,7 +61,20 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
           description: data.description,
           createdAtDate: date,
           createdAtTime: time,
+          is_restricted: data.is_restricted || false,
         });
+
+        // Determine current user's role and filter sidebar
+        const members = data.members || [];
+        const currentMember = members.find((m) => m.user.id === user?.id);
+        const role = currentMember?.role || null;
+        setCurrentUserRole(role);
+
+        if (role === "Leader" || role === "Admin") {
+          setSidebarItems(baseSidebarItems);
+        } else {
+          setSidebarItems(baseSidebarItems.filter((item) => !item.adminOnly));
+        }
       } catch (error) {
         toast.error("Failed to fetch group details.");
         console.error("Error fetching group details:", error);
@@ -64,7 +83,7 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
       }
     };
     fetchGroupData();
-  }, [groupId, isOpen]);
+  }, [groupId, isOpen, user?.id]);
 
   const handleSaveName = (newName) => {
     // API call to save new name
@@ -78,6 +97,13 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
     toast.success("Group description updated successfully.");
     setGroupData((prev) => ({ ...prev, description: newDescription }));
     setShowEditDescription(false);
+  };
+
+  const handleRestrictionUpdate = (newStatus) => {
+    setGroupData((prev) => ({ ...prev, is_restricted: newStatus }));
+    if (onRestrictionUpdate) {
+      onRestrictionUpdate(groupId, newStatus);
+    }
   };
 
   const renderContent = () => {
@@ -98,7 +124,21 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId }) => {
           />
         );
       case "permission":
-        return <GroupPermissions />;
+        // Prevent non-admins from viewing this tab, even if they get here.
+        if (currentUserRole !== "Leader" && currentUserRole !== "Admin") {
+          return (
+             <div className="p-6 text-center">
+              <p className="text-black-normal">You do not have permission to view this page.</p>
+            </div>
+          );
+        }
+        return (
+          <GroupPermissions
+            groupId={groupId}
+            isRestricted={groupData.is_restricted}
+            onRestrictionUpdate={handleRestrictionUpdate}
+          />
+        );
       case "leave":
         return (
           <LeaveGroupConfirmation onCancel={() => setActiveTab("overview")} />
