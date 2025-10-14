@@ -23,9 +23,8 @@ import EditGroupDescription from "../features/groupDetails/components/EditGroupD
 import MediaTab from "../features/groupDetails/components/MediaTab";
 import FilesTab from "../features/groupDetails/components/FilesTab";
 import { formatGroupOverviewDateTime } from "@/lib/formatMessageTime";
-import { useAuth } from "@/hooks/useAuth"; // Import useAuth
+import { useAuth } from "@/hooks/useAuth";
 
-// Icons for the sidebar
 const baseSidebarItems = [
   { id: "overview", label: "Overview", icon: <Info /> },
   { id: "screen_sharing", label: "Screen sharing", icon: <Monitor /> },
@@ -33,12 +32,24 @@ const baseSidebarItems = [
   { id: "files", label: "Files", icon: <File /> },
   { id: "links", label: "Links", icon: <Link /> },
   { id: "mute", label: "Mute", icon: <BellOff /> },
-  { id: "permission", label: "Permission", icon: <Settings />, adminOnly: true },
+  {
+    id: "permission",
+    label: "Permission",
+    icon: <Settings />,
+    adminOnly: true,
+  },
   { id: "leave", label: "Leave", icon: <LogOut /> },
 ];
 
-const GroupActionsPopup = ({ isOpen, onClose, groupId, onRestrictionUpdate }) => {
-  const [activeTab, setActiveTab] = useState("overview");
+const GroupActionsPopup = ({
+  isOpen,
+  onClose,
+  groupId,
+  onRestrictionUpdate,
+  initialTab = "overview",
+  onLeaveSuccess,
+}) => {
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [showEditName, setShowEditName] = useState(false);
   const [showEditDescription, setShowEditDescription] = useState(false);
   const [groupData, setGroupData] = useState(null);
@@ -48,6 +59,12 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId, onRestrictionUpdate }) =>
 
   const { getUser } = useAuth();
   const user = getUser();
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   useEffect(() => {
     const fetchGroupData = async () => {
@@ -64,7 +81,6 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId, onRestrictionUpdate }) =>
           is_restricted: data.is_restricted || false,
         });
 
-        // Determine current user's role and filter sidebar
         const members = data.members || [];
         const currentMember = members.find((m) => m.user.id === user?.id);
         const role = currentMember?.role || null;
@@ -86,14 +102,12 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId, onRestrictionUpdate }) =>
   }, [groupId, isOpen, user?.id]);
 
   const handleSaveName = (newName) => {
-    // API call to save new name
     toast.success("Group name updated successfully.");
     setGroupData((prev) => ({ ...prev, name: newName }));
     setShowEditName(false);
   };
 
   const handleSaveDescription = (newDescription) => {
-    // API call to save new description
     toast.success("Group description updated successfully.");
     setGroupData((prev) => ({ ...prev, description: newDescription }));
     setShowEditDescription(false);
@@ -124,11 +138,12 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId, onRestrictionUpdate }) =>
           />
         );
       case "permission":
-        // Prevent non-admins from viewing this tab, even if they get here.
         if (currentUserRole !== "Leader" && currentUserRole !== "Admin") {
           return (
-             <div className="p-6 text-center">
-              <p className="text-black-normal">You do not have permission to view this page.</p>
+            <div className="p-6 text-center">
+              <p className="text-black-normal">
+                You do not have permission to view this page.
+              </p>
             </div>
           );
         }
@@ -141,7 +156,11 @@ const GroupActionsPopup = ({ isOpen, onClose, groupId, onRestrictionUpdate }) =>
         );
       case "leave":
         return (
-          <LeaveGroupConfirmation onCancel={() => setActiveTab("overview")} />
+          <LeaveGroupConfirmation
+            groupId={groupId}
+            onCancel={() => setActiveTab("overview")}
+            onLeaveSuccess={onLeaveSuccess}
+          />
         );
       case "media":
         return <MediaTab />;
