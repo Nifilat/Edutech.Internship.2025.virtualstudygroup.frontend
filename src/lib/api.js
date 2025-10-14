@@ -132,10 +132,13 @@ export const studyGroupAPI = {
       }
     );
     return response.data;
-  }
+  },
+
+  leaveStudyGroup: async (groupId) => {
+    const response = await api.delete(`/study-groups/${groupId}/leave`);
+    return response.data;
+  },
 };
-
-
 
 
 export const notificationsAPI = {
@@ -165,3 +168,10 @@ export const chatAPI = {
     return response.data;
   },
 };
+
+export const permissionsAPI = {
+  limitMessages: async (groupId) => {
+    const response = await api.post(`/groups/${groupId}/toggle-restriction`);
+    return response.data;
+  }
+}
