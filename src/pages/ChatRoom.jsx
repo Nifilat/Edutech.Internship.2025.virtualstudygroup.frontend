@@ -68,7 +68,6 @@ const Chatroom = () => {
                 lastMessageRead: lastMsg?.status === "read",
                 lastMessageDelivered: lastMsg?.status === "delivered",
                 is_restricted: group.is_restricted || false,
-                // Role might be missing here, we'll fetch it on selection
                 currentUserRole: group.current_user_role || "Member",
                 pendingRequest:
                   Number(group.created_by) === Number(user?.id) &&
@@ -98,7 +97,7 @@ const Chatroom = () => {
     fetchGroups();
   }, [user?.id]);
 
-  // ✨ NEW: Fetch detailed group info when a chat is selected
+  // Fetch detailed group info when a chat is selected
   useEffect(() => {
     const fetchRoleAndDetails = async () => {
       if (!selectedChat?.id || !user?.id) return;
@@ -123,7 +122,6 @@ const Chatroom = () => {
 
     fetchRoleAndDetails();
   }, [selectedChat?.id, user?.id]);
-
 
   // Fetch messages when selectedChat changes
   useEffect(() => {
@@ -238,13 +236,29 @@ const Chatroom = () => {
 
   // Handle restriction update from child components
   const handleRestrictionUpdate = (chatId, isRestricted) => {
-    setChats(prevChats =>
-        prevChats.map(chat =>
-            chat.id === chatId ? { ...chat, is_restricted: isRestricted } : chat
-        )
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === chatId ? { ...chat, is_restricted: isRestricted } : chat
+      )
     );
     if (selectedChat?.id === chatId) {
-        setSelectedChat(prev => ({ ...prev, is_restricted: isRestricted }));
+      setSelectedChat((prev) => ({ ...prev, is_restricted: isRestricted }));
+    }
+  };
+
+  const handleLeaveGroupSuccess = (groupId) => {
+    const originalChats = [...chats];
+    const updatedChats = originalChats.filter((c) => c.id !== groupId);
+    setChats(updatedChats);
+
+    if (selectedChat?.id === groupId) {
+      if (updatedChats.length > 0) {
+        const removedIndex = originalChats.findIndex((c) => c.id === groupId);
+        const newIndex = Math.max(0, removedIndex - 1);
+        setSelectedChat(updatedChats[newIndex]);
+      } else {
+        setSelectedChat(null);
+      }
     }
   };
 
@@ -280,6 +294,7 @@ const Chatroom = () => {
             isLoadingMessages={isLoadingMessages}
             onSendMessage={handleSendMessage}
             onRestrictionUpdate={handleRestrictionUpdate}
+            onLeaveGroupSuccess={handleLeaveGroupSuccess}
           />
         </>
       ) : (
