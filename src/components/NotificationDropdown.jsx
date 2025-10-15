@@ -53,7 +53,6 @@ const NotificationDropdown = ({
     const requestKey = `${notification.data.group_id}-${notification.data.user_id}`;
     if (processingRequests.has(requestKey)) return;
 
-
     const group = userGroups.find(
       (g) => Number(g.id) === Number(notification.data.group_id)
     );
@@ -118,9 +117,9 @@ const NotificationDropdown = ({
   const hasStatusNotifications = statusNotifications.length > 0;
 
   return (
-    <div className="w-[368px] bg-white rounded-lg p-6">
+    <div className="w-[368px] bg-white rounded-lg p-6 flex flex-col">
       {/* Header */}
-      <div className="border-b flex items-center gap-3">
+      <div className="border-b flex items-center gap-3 pb-4 flex-shrink-0">
         {onClose && (
           <Button
             variant="ghost"
@@ -136,30 +135,119 @@ const NotificationDropdown = ({
         </h3>
       </div>
 
-      {/* Pending Requests */}
-      {hasPendingRequests && (
-        <div className="border-b">
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-xs text-black-normal mb-3">
-              New members need admin approval to join{" "}
-              {pendingRequests.length > 1 ? "these groups" : "this group"}.
-            </p>
-            <p className="text-xs font-medium text-grey-dark-active mb-3">
-              From Invite Link
-            </p>
-          </div>
+      <div
+        className="overflow-y-auto"
+        style={{ maxHeight: "calc(80vh - 100px)" }}
+      >
+        {/* Pending Requests */}
+        {hasPendingRequests && (
+          <div className="border-b">
+            <div className="px-4 pt-4 pb-2">
+              <p className="text-xs text-black-normal mb-3">
+                New members need admin approval to join{" "}
+                {pendingRequests.length > 1 ? "these groups" : "this group"}.
+              </p>
+              <p className="text-xs font-medium text-grey-dark-active mb-3">
+                From Invite Link
+              </p>
+            </div>
 
-          <div className="px-4 pb-4 space-y-3">
-            {pendingRequests.map((notification) => {
-              const requestKey = `${notification.data.group_id}-${notification.data.user_id}`;
-              const isProcessing = processingRequests.has(requestKey);
-              const handledStatus = handledRequests.get(requestKey);
+            <div className="px-4 pb-4 space-y-3">
+              {pendingRequests.map((notification) => {
+                const requestKey = `${notification.data.group_id}-${notification.data.user_id}`;
+                const isProcessing = processingRequests.has(requestKey);
+                const handledStatus = handledRequests.get(requestKey);
+
+                return (
+                  <div
+                    key={notification.id}
+                    className="flex items-center justify-between relative"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Avatar className="w-10 h-10 flex-shrink-0">
+                        {notification.data.user_avatar ? (
+                          <AvatarImage
+                            src={notification.data.user_avatar}
+                            alt={notification.data.user_name || "User"}
+                          />
+                        ) : null}
+                        <AvatarFallback className="bg-gray-200">
+                          {notification.data.user_name ? (
+                            notification.data.user_name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()
+                              .slice(0, 2)
+                          ) : (
+                            <User className="w-5 h-5 text-gray-500" />
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-black-normal">
+                          {notification.data.message}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      {handledStatus === "approve" ? (
+                        <span className="text-sm text-green-600">Approved</span>
+                      ) : handledStatus === "reject" ? (
+                        <span className="text-sm text-red-600">Rejected</span>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              handleRequest(notification, "reject")
+                            }
+                            disabled={isProcessing}
+                            className="w-8 h-8 rounded-full border-orange-light-active border hover:bg-gray-100"
+                          >
+                            <X className="w-4 h-4 text-black-normal" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            onClick={() =>
+                              handleRequest(notification, "approve")
+                            }
+                            disabled={isProcessing}
+                            className="w-8 h-8 rounded-full bg-orange-normal hover:bg-orange-normal-hover text-white"
+                          >
+                            {isProcessing ? (
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <Check className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Handled Requests (Approved/Rejected) */}
+        {hasHandledRequests && (
+          <div className="border-b px-4 py-3 space-y-3">
+            {handledRequestsList.map((notification) => {
+              const isApproved = notification.data.status === "approved";
+              const isUnread = !notification.read_at;
 
               return (
                 <div
                   key={notification.id}
                   className="flex items-center justify-between relative"
                 >
+                  {/* {isUnread && (
+                  <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-2 h-2 bg-orange-500 rounded-full"></div>
+                )} */}
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Avatar className="w-10 h-10 flex-shrink-0">
                       {notification.data.user_avatar ? (
@@ -182,160 +270,80 @@ const NotificationDropdown = ({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-black-normal">
+                      <p className="text-sm text-black-normal">
                         {notification.data.message}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                    {handledStatus === "approve" ? (
-                      <span className="text-sm text-green-600">Approved</span>
-                    ) : handledStatus === "reject" ? (
-                      <span className="text-sm text-red-600">Rejected</span>
-                    ) : (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRequest(notification, "reject")}
-                          disabled={isProcessing}
-                          className="w-8 h-8 rounded-full border-orange-light-active border hover:bg-gray-100"
-                        >
-                          <X className="w-4 h-4 text-black-normal" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          onClick={() => handleRequest(notification, "approve")}
-                          disabled={isProcessing}
-                          className="w-8 h-8 rounded-full bg-orange-normal hover:bg-orange-normal-hover text-white"
-                        >
-                          {isProcessing ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <Check className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Handled Requests (Approved/Rejected) */}
-      {hasHandledRequests && (
-        <div className="border-b px-4 py-3 space-y-3">
-          {handledRequestsList.map((notification) => {
-            const isApproved = notification.data.status === "approved";
-            const isUnread = !notification.read_at;
-
-            return (
-              <div
-                key={notification.id}
-                className="flex items-center justify-between relative"
-              >
-                {/* {isUnread && (
-                  <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-2 h-2 bg-orange-500 rounded-full"></div>
-                )} */}
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Avatar className="w-10 h-10 flex-shrink-0">
-                    {notification.data.user_avatar ? (
-                      <AvatarImage
-                        src={notification.data.user_avatar}
-                        alt={notification.data.user_name || "User"}
-                      />
-                    ) : null}
-                    <AvatarFallback className="bg-gray-200">
-                      {notification.data.user_name ? (
-                        notification.data.user_name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .toUpperCase()
-                          .slice(0, 2)
-                      ) : (
-                        <User className="w-5 h-5 text-gray-500" />
-                      )}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-black-normal">
-                      {notification.data.message}
-                    </p>
-                  </div>
-                </div>
-
-                <span
-                  className={`text-sm font-medium ${
-                    isApproved ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {isApproved ? "Approved" : "Rejected"}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Status Notifications Section */}
-      {hasStatusNotifications && (
-        <div className="p-4 max-h-96 overflow-y-auto">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">
-            Recent Notifications
-          </h4>
-          <div className="space-y-2">
-            {statusNotifications.map((notification) => {
-              const isApproved = notification.data.status === "approved";
-              const isRejected = notification.data.status === "rejected";
-
-              return (
-                <div
-                  key={notification.id}
-                  className={`p-3 rounded-lg text-sm ${
-                    notification.read_at
-                      ? "bg-gray-50"
-                      : isApproved
-                      ? "bg-green-50"
-                      : isRejected
-                      ? "bg-red-50"
-                      : "bg-orange-50"
-                  }`}
-                >
-                  <p
-                    className={`${
-                      notification.read_at
-                        ? "text-gray-600"
-                        : isApproved
-                        ? "text-green-900"
-                        : isRejected
-                        ? "text-red-900"
-                        : "text-gray-900"
+                  <span
+                    className={`text-sm font-medium ${
+                      isApproved ? "text-green-600" : "text-red-600"
                     }`}
                   >
-                    {notification.data.message}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(notification.created_at).toLocaleString()}
-                  </p>
+                    {isApproved ? "Approved" : "Rejected"}
+                  </span>
                 </div>
               );
             })}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Empty State */}
-      {!hasPendingRequests && !hasStatusNotifications && (
-        <div className="p-8 text-center">
-          <Bell className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">No notifications</p>
-        </div>
-      )}
+        {/* Status Notifications Section */}
+        {hasStatusNotifications && (
+          <div className="p-4 max-h-96 overflow-y-auto">
+            <h4 className="text-sm font-medium text-gray-900 mb-3">
+              Recent Notifications
+            </h4>
+            <div className="space-y-2">
+              {statusNotifications.map((notification) => {
+                const isApproved = notification.data.status === "approved";
+                const isRejected = notification.data.status === "rejected";
+
+                return (
+                  <div
+                    key={notification.id}
+                    className={`p-3 rounded-lg text-sm ${
+                      notification.read_at
+                        ? "bg-gray-50"
+                        : isApproved
+                        ? "bg-green-50"
+                        : isRejected
+                        ? "bg-red-50"
+                        : "bg-orange-50"
+                    }`}
+                  >
+                    <p
+                      className={`${
+                        notification.read_at
+                          ? "text-gray-600"
+                          : isApproved
+                          ? "text-green-900"
+                          : isRejected
+                          ? "text-red-900"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {notification.data.message}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(notification.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!hasPendingRequests && !hasStatusNotifications && (
+          <div className="p-8 text-center">
+            <Bell className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">No notifications</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
