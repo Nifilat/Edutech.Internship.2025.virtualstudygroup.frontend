@@ -144,6 +144,18 @@ export const notificationsAPI = {
     const response = await api.get("/notifications");
     return response.data;
   },
+
+  markAsRead: async (notificationId) => {
+    const response = await api.post(
+      `/notifications/${notificationId}/mark-as-read`
+    );
+    return response.data;
+  },
+
+  markAllAsRead: async () => {
+    const response = await api.post("/notifications/mark-all-as-read");
+    return response.data;
+  },
 };
 
 export const userAPI = {
