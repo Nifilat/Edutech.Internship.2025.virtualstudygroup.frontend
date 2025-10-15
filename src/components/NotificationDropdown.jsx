@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { X, Check, User, Bell } from "lucide-react";
+import { X, Check, User, Bell, CheckCheck } from "lucide-react";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { toast } from "sonner";
-import { studyGroupAPI } from "@/lib/api";
+import { studyGroupAPI, notificationsAPI } from "@/lib/api";
 import { ArrowLeft } from "./icons";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -11,10 +11,12 @@ const NotificationDropdown = ({
   notifications,
   onNotificationHandled,
   onClose,
+  unreadCount,
 }) => {
   const [processingRequests, setProcessingRequests] = useState(new Set());
   const [handledRequests, setHandledRequests] = useState(new Map());
   const [userGroups, setUserGroups] = useState([]);
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
 
   const { getUser } = useAuth();
   const user = getUser();
@@ -112,6 +114,32 @@ const NotificationDropdown = ({
     }
   };
 
+  const handleMarkAllRead = async () => {
+    if (isMarkingAllRead || unreadCount === 0) return;
+    setIsMarkingAllRead(true);
+    try {
+      await notificationsAPI.markAllAsRead();
+      toast.success("All notifications marked as read");
+      onNotificationHandled();
+    } catch (error) {
+      toast.error("Failed to mark all as read.");
+      console.error("Error marking all notifications as read:", error);
+    } finally {
+      setIsMarkingAllRead(false);
+    }
+  };
+
+  const handleMarkOneAsRead = async (notification) => {
+    if (notification.read_at) return;
+
+    try {
+      await notificationsAPI.markAsRead(notification.id);
+      onNotificationHandled();
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
   const hasPendingRequests = pendingRequests.length > 0;
   const hasHandledRequests = handledRequestsList.length > 0;
   const hasStatusNotifications = statusNotifications.length > 0;
@@ -120,19 +148,35 @@ const NotificationDropdown = ({
     <div className="w-[368px] bg-white rounded-lg p-6 flex flex-col">
       {/* Header */}
       <div className="border-b flex items-center gap-3 pb-4 flex-shrink-0">
-        {onClose && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="h-8 w-8 hover:bg-gray-100"
-          >
-            <ArrowLeft />
-          </Button>
-        )}
-        <h3 className="text-lg font-semibold text-black-normal">
-          {hasPendingRequests ? "Pending Requests" : "Notifications"}
-        </h3>
+        <div className="flex items-center gap-3">
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8 hover:bg-gray-100"
+            >
+              <ArrowLeft />
+            </Button>
+          )}
+          <h3 className="text-lg font-semibold text-black-normal">
+            {hasPendingRequests ? "Pending Requests" : "Notifications"}
+          </h3>
+        </div>
+        <Button
+          variant="link"
+          className="text-orange-normal p-0 h-auto text-xs"
+          onClick={handleMarkAllRead}
+          disabled={isMarkingAllRead || unreadCount === 0}
+        >
+          {isMarkingAllRead ? (
+            "Marking..."
+          ) : (
+            <>
+              <CheckCheck className="w-4 h-4 mr-1" /> Mark all as read
+            </>
+          )}
+        </Button>
       </div>
 
       <div
@@ -312,16 +356,13 @@ const NotificationDropdown = ({
                         ? "bg-red-50"
                         : "bg-orange-50"
                     }`}
+                    onClick={() => handleMarkOneAsRead(notification)}
                   >
                     <p
                       className={`${
                         notification.read_at
                           ? "text-gray-600"
-                          : isApproved
-                          ? "text-green-900"
-                          : isRejected
-                          ? "text-red-900"
-                          : "text-gray-900"
+                          : "font-medium text-gray-900"
                       }`}
                     >
                       {notification.data.message}
