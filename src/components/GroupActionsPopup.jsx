@@ -163,9 +163,9 @@ const GroupActionsPopup = ({
           />
         );
       case "media":
-        return <MediaTab />;
+        return <MediaTab groupId={groupId} />;
       case "files":
-        return <FilesTab />;
+        return <FilesTab groupId={groupId} />;
       default:
         return (
           <div className="p-6">
