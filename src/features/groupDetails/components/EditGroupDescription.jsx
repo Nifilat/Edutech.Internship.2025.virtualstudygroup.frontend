@@ -3,14 +3,21 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogTitle } from "@radix-ui/react-dialog";
+import { Loader2 } from "lucide-react";
 
 const EditGroupDescription = ({
   isOpen,
   onClose,
   initialDescription,
   onSave,
+  isSaving,
 }) => {
   const [description, setDescription] = useState(initialDescription);
+
+  React.useEffect(() => {
+    setDescription(initialDescription);
+  }, [initialDescription]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-96 p-6 rounded-none w-full">
@@ -26,6 +33,7 @@ const EditGroupDescription = ({
           <Button
             variant="outline"
             onClick={onClose}
+            disabled={isSaving}
             className="border border-orange-normal text-sm font-medium text-orange-normal rounded-[3px]"
           >
             Cancel
@@ -33,8 +41,9 @@ const EditGroupDescription = ({
           <Button
             className="bg-orange-normal text-white-normal text-sm font-medium rounded-[3px]"
             onClick={() => onSave(description)}
+            disabled={isSaving}
           >
-            Save
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
           </Button>
         </div>
       </DialogContent>
