@@ -137,6 +137,14 @@ export const studyGroupAPI = {
     const response = await api.delete(`/study-groups/${groupId}/leave`);
     return response.data;
   },
+
+  updateGroupDetails: async (groupId, updateData) => {
+    const response = await api.post(
+      `/study-groups/${groupId}/update`,
+      updateData
+    );
+    return response.data;
+  },
 };
 
 export const notificationsAPI = {
