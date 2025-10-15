@@ -262,6 +262,17 @@ const Chatroom = () => {
     }
   };
 
+  const handleGroupDetailsUpdate = (groupId, updatedData) => {
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === groupId ? { ...chat, ...updatedData } : chat
+      )
+    );
+    if (selectedChat?.id === groupId) {
+      setSelectedChat((prev) => ({ ...prev, ...updatedData }));
+    }
+  };
+
   if (loadingChats) {
     return (
       <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
@@ -295,6 +306,7 @@ const Chatroom = () => {
             onSendMessage={handleSendMessage}
             onRestrictionUpdate={handleRestrictionUpdate}
             onLeaveGroupSuccess={handleLeaveGroupSuccess}
+            onGroupDetailsUpdate={handleGroupDetailsUpdate}
           />
         </>
       ) : (
