@@ -48,6 +48,7 @@ const GroupActionsPopup = ({
   onRestrictionUpdate,
   initialTab = "overview",
   onLeaveSuccess,
+  onGroupDetailsUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showEditName, setShowEditName] = useState(false);
@@ -56,6 +57,7 @@ const GroupActionsPopup = ({
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState(null);
   const [sidebarItems, setSidebarItems] = useState(baseSidebarItems);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const { getUser } = useAuth();
   const user = getUser();
@@ -101,16 +103,63 @@ const GroupActionsPopup = ({
     fetchGroupData();
   }, [groupId, isOpen, user?.id]);
 
-  const handleSaveName = (newName) => {
-    toast.success("Group name updated successfully.");
-    setGroupData((prev) => ({ ...prev, name: newName }));
-    setShowEditName(false);
+  const handleSaveName = async (newName) => {
+    if (!newName.trim() || newName === groupData.name) {
+      setShowEditName(false);
+      return;
+    }
+    setIsUpdating(true);
+    try {
+      await studyGroupAPI.updateGroupDetails(groupId, { group_name: newName });
+      toast.success("Group name updated successfully.");
+
+      // Update local state
+      setGroupData((prev) => ({ ...prev, name: newName }));
+
+      // Propagate state up to ChatRoom
+      if (onGroupDetailsUpdate) {
+        onGroupDetailsUpdate(groupId, { name: newName });
+      }
+
+      setShowEditName(false);
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to update group name."
+      );
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const handleSaveDescription = (newDescription) => {
-    toast.success("Group description updated successfully.");
-    setGroupData((prev) => ({ ...prev, description: newDescription }));
-    setShowEditDescription(false);
+  // ✨ UPDATED: Connect handleSaveDescription to the API
+  const handleSaveDescription = async (newDescription) => {
+    if (newDescription === groupData.description) {
+      setShowEditDescription(false);
+      return;
+    }
+    setIsUpdating(true);
+    try {
+      await studyGroupAPI.updateGroupDetails(groupId, {
+        description: newDescription,
+      });
+      toast.success("Group description updated successfully.");
+
+      // Update local state
+      setGroupData((prev) => ({ ...prev, description: newDescription }));
+
+      // Propagate state up to ChatRoom (good practice)
+      if (onGroupDetailsUpdate) {
+        onGroupDetailsUpdate(groupId, { description: newDescription });
+      }
+
+      setShowEditDescription(false);
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Failed to update group description."
+      );
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleRestrictionUpdate = (newStatus) => {
@@ -236,12 +285,14 @@ const GroupActionsPopup = ({
             onClose={() => setShowEditName(false)}
             initialName={groupData.name}
             onSave={handleSaveName}
+            isSaving={isUpdating}
           />
           <EditGroupDescription
             isOpen={showEditDescription}
             onClose={() => setShowEditDescription(false)}
             initialDescription={groupData.description}
             onSave={handleSaveDescription}
+            isSaving={isUpdating}
           />
         </>
       )}
