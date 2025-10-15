@@ -3,11 +3,6 @@ import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import {
   UserGroup,
-  AddTeam,
-  Phone,
-  Video,
-  Search,
-  MoreHorizontal,
   Paperclip,
   Mic,
   Send,
@@ -18,11 +13,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import GroupParticipantsPopup from "./GroupParticpantPopup";
 import FileUploadDropdown from "../features/chat/components/FileUploadModal";
 import { useAuth } from "@/hooks/useAuth";
-import { studyGroupAPI } from "@/lib/api";
+import { studyGroupAPI, chatAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { Loader2, X } from "lucide-react";
-import { formatDateSeparator } from "../lib/formatMessageTime";
+import { formatDateSeparator } from "@/lib/formatMessageTime";
 import GroupActionsPopup from "./GroupActionsPopup";
+import { FileMessage } from "../features/chat/components/FileMessage";
+import { ChatHeader } from "../features/chat/components/ChatHeader";
 
 function ChatWindow({
   activeChat,
@@ -40,8 +37,8 @@ function ChatWindow({
   const [actionsPopupInitialTab, setActionsPopupInitialTab] =
     useState("overview");
   const [sending, setSending] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [participantsCount, setParticipantsCount] = useState(0);
-  const [selectedFiles, setSelectedFiles] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [messageSearchQuery, setMessageSearchQuery] = useState("");
   const inputRef = useRef(null);
@@ -101,13 +98,26 @@ function ChatWindow({
     }
   };
 
-  const handleFileSelect = (files, type) => {
-    console.log(`Selected ${type}:`, files);
-    setSelectedFiles((prev) => [
-      ...prev,
-      ...files.map((f) => ({ file: f, type })),
-    ]);
-    toast.success(`${files.length} file(s) selected`);
+  const handleFileSelect = async (files, type) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("group_id", activeChat.id);
+    formData.append("message", file.name);
+
+    try {
+      await chatAPI.uploadFile(formData);
+      toast.success("File uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast.error(error.response?.data?.message || "Failed to upload file.");
+      toast.error("Failed to upload file");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleInputKeyDown = (e) => {
@@ -148,28 +158,6 @@ function ChatWindow({
     );
   }
 
-  const renderChatAvatar = () => {
-    if (activeChat.isGroup) {
-      return (
-        <div className="flex items-center justify-center">
-          <UserGroup />
-        </div>
-      );
-    }
-
-    return (
-      <Avatar className="w-12 h-12">
-        <AvatarImage src={activeChat.avatar} alt={activeChat.name} />
-        <AvatarFallback className="bg-orange-200 text-orange-800">
-          {activeChat.name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")}
-        </AvatarFallback>
-      </Avatar>
-    );
-  };
-
   const filteredMessages = echoMessages.filter((msg) =>
     msg.message.toLowerCase().includes(messageSearchQuery.toLowerCase())
   );
@@ -182,76 +170,14 @@ function ChatWindow({
   return (
     <div className="flex-1 flex flex-col">
       {/* Chat Header */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {renderChatAvatar()}
-          <div className="ml-3 min-w-0">
-            <h2 className="text-lg font-medium text-black-normal truncate">
-              {activeChat.name}
-            </h2>
-            <div className="flex items-center gap-2">
-              {!isEchoConnected && (
-                <span className="text-xs text-gray-400">(Connecting...)</span>
-              )}
-              {isEchoConnected && (
-                <span className="text-xs text-green-500 flex items-center">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                  Online
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-orange-normal hover:text-orange-dark relative"
-            onClick={() => setShowParticipantsPopup(true)}
-          >
-            <AddTeam />
-            {activeChat.isGroup && (
-              <div className="absolute top-1 right-1 bg-orange-normal text-white text-[6px] rounded-full w-3 h-3 flex items-center justify-center font-medium">
-                {participantsCount}
-              </div>
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-orange-normal hover:text-orange-dark"
-          >
-            <Phone className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-orange-normal hover:text-orange-dark"
-          >
-            <Video className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-orange-normal hover:text-orange-dark"
-            onClick={() => setIsSearching(!isSearching)}
-          >
-            <Search className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-orange-normal hover:text-orange-dark"
-            onClick={() => {
-              setActionsPopupInitialTab("overview");
-              setShowActionsPopup(true);
-            }}
-          >
-            <MoreHorizontal className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
+      <ChatHeader
+        activeChat={activeChat}
+        isEchoConnected={isEchoConnected}
+        participantsCount={participantsCount}
+        onShowParticipants={() => setShowParticipantsPopup(true)}
+        onToggleSearch={() => setIsSearching((prev) => !prev)}
+        onShowActions={() => setShowActionsPopup(true)}
+      />
 
       {isSearching && (
         <div className="p-4 border-b border-gray-200 flex items-center">
@@ -356,7 +282,7 @@ function ChatWindow({
                         </Avatar>
                       )}
                       <div
-                        className={`px-4 py-2 rounded-lg ${
+                        className={`px-4 py-2 shadow-sm rounded-lg ${
                           isOwn
                             ? "bg-orange-light text-black-normal rounded-br-none"
                             : "bg-grey-light text-black-normal rounded-bl-none"
@@ -367,7 +293,19 @@ function ChatWindow({
                             {userName}
                           </p>
                         )}
-                        <p className="text-sm font-normal">{msg.message}</p>
+                        {msg.file ? (
+                          <FileMessage msg={msg} />
+                        ) : (
+                          <p
+                            className="text-sm font-normal px-4 py-2"
+                            style={{
+                              whiteSpace: "pre-wrap",
+                              wordBreak: "break-word",
+                            }}
+                          >
+                            {msg.message}
+                          </p>
+                        )}
                         <div className="flex items-center justify-between mt-1">
                           <p className="text-xs text-gray-400">
                             {msg.created_at
@@ -448,7 +386,7 @@ function ChatWindow({
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleInputKeyDown}
                 aria-label="Type your message"
-                disabled={sending}
+                disabled={sending || isUploading}
                 className="pr-20 bg-gray-50 border-gray-200 rounded-full"
               />
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
@@ -456,7 +394,7 @@ function ChatWindow({
                   variant="ghost"
                   size="icon"
                   className="text-gray-400 hover:text-gray-600 w-8 h-8"
-                  disabled={sending}
+                  disabled={sending || isUploading}
                 >
                   <Mic className="w-4 h-4" />
                 </Button>
@@ -465,10 +403,10 @@ function ChatWindow({
                   onClick={handleSendMessage}
                   size="icon"
                   className="bg-inherit"
-                  disabled={!message.trim() || sending}
+                  disabled={!message.trim() || sending || isUploading}
                   aria-label="Send message"
                 >
-                  {sending ? (
+                  {sending || isUploading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Send className="" />
