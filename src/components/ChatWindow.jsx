@@ -29,6 +29,7 @@ function ChatWindow({
   onSendMessage,
   onRestrictionUpdate,
   onLeaveGroupSuccess,
+  onGroupDetailsUpdate,
 }) {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -434,6 +435,7 @@ function ChatWindow({
         onRestrictionUpdate={onRestrictionUpdate}
         initialTab={actionsPopupInitialTab}
         onLeaveSuccess={handleLeaveSuccessAndClosePopup}
+        onGroupDetailsUpdate={onGroupDetailsUpdate}
       />
     </div>
   );
