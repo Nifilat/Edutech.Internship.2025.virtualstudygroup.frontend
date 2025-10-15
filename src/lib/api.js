@@ -2,6 +2,8 @@ import axios from "axios";
 
 const API_BASE_URL = "https://ediifyapi.tife.com.ng/api";
 
+export const API_STORAGE_URL = "https://ediifyapi.tife.com.ng/storage";
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -9,7 +11,6 @@ export const api = axios.create({
   },
   withCredentials: true,
 });
-
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
@@ -24,7 +25,6 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
 
 // Response interceptor to handle auth errors
 api.interceptors.response.use(
@@ -115,7 +115,6 @@ export const studyGroupAPI = {
       });
       return response.data;
     } catch (error) {
-    
       return {
         status: "error",
         message: error.response?.data?.message || "Failed to add group member",
@@ -139,7 +138,6 @@ export const studyGroupAPI = {
     return response.data;
   },
 };
-
 
 export const notificationsAPI = {
   getNotifications: async () => {
@@ -167,11 +165,32 @@ export const chatAPI = {
     const response = await api.get(`/groups/${groupId}/messages`);
     return response.data;
   },
+
+  uploadFile: async (formData) => {
+    const response = await api.post("/groups/file/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  },
+
+  getFiles: async (groupId) => {
+    const response = await api.get(`/groups/${groupId}/get_files`);
+    return response.data;
+  },
+
+  downloadFile: async (fileId) => {
+    const response = await api.get(`/groups/file/download/${fileId}`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
 };
 
 export const permissionsAPI = {
   limitMessages: async (groupId) => {
     const response = await api.post(`/groups/${groupId}/toggle-restriction`);
     return response.data;
-  }
-}
+  },
+};
