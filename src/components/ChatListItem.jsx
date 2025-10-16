@@ -98,11 +98,6 @@ function ChatListItem({ chat, isActive, onClick, onPinToggle }) {
             </div>
             <div className="flex items-center ml-2 space-x-2 flex-shrink-0">
               {chat.isPinned && <Pin className="w-5 h-5 text-[#525866]" />}
-              {chat.unreadCount > 0 && (
-                <div className="w-5 h-5 bg-orange-normal text-orange-light font-medium text-[9px] rounded-full flex items-center justify-center">
-                  {chat.unreadCount}
-                </div>
-              )}
             </div>
           </div>
         </div>
