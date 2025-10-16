@@ -27,8 +27,9 @@ const Chatroom = () => {
     updateMessageStatus,
   } = usePusherChat(selectedChat?.id || null);
 
-  const fetchChatsList = useCallback(async () => {
-    setLoadingChats(true);
+  const fetchChatsList = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) setLoadingChats(true);
+    
     try {
       const [groupsData, coursesData] = await Promise.all([
         studyGroupAPI.getUserGroups(),
@@ -36,9 +37,7 @@ const Chatroom = () => {
       ]);
 
       if (groupsData?.data) {
-        const coursesMap = new Map(
-          coursesData?.map((c) => [c.id.toString(), c]) || []
-        );
+        const coursesMap = new Map(coursesData?.map((c) => [c.id.toString(), c]) || []);
         const transformed = groupsData.data
           .filter((group) => group && group.id)
           .map((group) => {
@@ -50,12 +49,12 @@ const Chatroom = () => {
               name: group.group_name,
               courseCode: course?.course_code || `COURSE ${group.course_id}`,
               courseName: course?.course_name || "",
-              lastMessage:
-                lastMsg?.message || group.description || "Start chatting...",
+              lastMessage: lastMsg?.message || group.description || "Start chatting...",
               time: formatMessageTime(lastMsg?.created_at || group.updated_at),
               avatar: null,
               isGroup: true,
               isPinned: false,
+              unreadCount: group.unread_count || 0,
               lastMessageFromMe: lastMsg?.user_id == user?.id,
               lastMessageRead: lastMsg?.status === "read",
               lastMessageDelivered: lastMsg?.status === "delivered",
@@ -71,23 +70,43 @@ const Chatroom = () => {
 
         transformed.sort((a, b) => new Date(b.time) - new Date(a.time));
 
-        setChats(transformed);
+        setChats(currentChats => {
+            const newChatsMap = new Map(transformed.map(c => [c.id, c]));
+            return transformed.map(newChat => {
+                const existingChat = currentChats.find(c => c.id === newChat.id);
+                return existingChat ? { ...newChat, isPinned: existingChat.isPinned } : newChat;
+            });
+        });
 
-        if (transformed.length > 0 && !selectedChat) {
+        if (isInitialLoad && transformed.length > 0 && !selectedChat) {
           setSelectedChat(transformed[0]);
         }
       }
     } catch (err) {
-      console.error("Fetch error:", err);
-      toast.error("Failed to load your chats.");
+      console.error("Polling/fetch error:", err);
+      if (isInitialLoad) toast.error("Failed to load your chats.");
     } finally {
-      setLoadingChats(false);
+      if (isInitialLoad) setLoadingChats(false);
     }
-  }, [user?.id, selectedChat]);
+  // ✨ FIX: Removed selectedChat from dependency array to stabilize the function
+  }, [user?.id]); 
 
   // Initial load
   useEffect(() => {
-    fetchChatsList();
+    fetchChatsList(true);
+  }, [fetchChatsList]);
+
+  // Periodic polling for background updates
+  useEffect(() => {
+    const intervalId = setInterval(() => fetchChatsList(false), 20000);
+    return () => clearInterval(intervalId);
+  }, [fetchChatsList]);
+
+  // ✨ NEW: Instant refresh when the user focuses on the tab
+  useEffect(() => {
+    const handleFocus = () => fetchChatsList(false);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [fetchChatsList]);
 
   // Fetch detailed group info when a chat is selected
@@ -124,6 +143,11 @@ const Chatroom = () => {
         }));
         initializeMessages([...formatted].reverse());
 
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === selectedChat.id ? { ...chat, unreadCount: 0 } : chat
+          )
+        );
         setTimeout(() => {
           formatted.forEach((msg) => {
             if (msg.user_id != user?.id) updateMessageStatus(msg.id, "read");
@@ -161,6 +185,12 @@ const Chatroom = () => {
             lastMessageFromMe: isFromMe,
             lastMessageRead: lastMessage.status === "read",
             lastMessageDelivered: lastMessage.status === "delivered",
+            unreadCount:
+              !isFromMe && !isActiveChat
+                ? (chat.unreadCount || 0) + 1
+                : isActiveChat
+                ? 0
+                : chat.unreadCount,
           };
         }
         return chat;
