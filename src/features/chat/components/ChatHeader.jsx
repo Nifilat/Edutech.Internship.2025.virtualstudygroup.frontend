@@ -39,6 +39,7 @@ export const ChatHeader = ({
   onShowParticipants,
   onToggleSearch,
   onShowActions,
+  onStartCall,
 }) => {
   return (
     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
@@ -80,13 +81,15 @@ export const ChatHeader = ({
           variant="ghost"
           size="icon"
           className="text-orange-normal hover:text-orange-dark"
+          onClick={onStartCall}
         >
-          <Phone className="w-5 h-5" />
+          <Phone className="w-5 h-5"  />
         </Button>
         <Button
           variant="ghost"
           size="icon"
           className="text-orange-normal hover:text-orange-dark"
+          onClick={onStartCall}
         >
           <Video className="w-5 h-5" />
         </Button>
