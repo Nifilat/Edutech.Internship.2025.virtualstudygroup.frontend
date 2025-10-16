@@ -1,12 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
-import {
-  UserGroup,
-  Paperclip,
-  Mic,
-  Send,
-} from "./icons";
+import { UserGroup, Paperclip, Mic, Send } from "./icons";
+import { Dialog, DialogContent } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -20,6 +16,7 @@ import { formatDateSeparator } from "@/lib/formatMessageTime";
 import GroupActionsPopup from "./GroupActionsPopup";
 import { FileMessage } from "../features/chat/components/FileMessage";
 import { ChatHeader } from "../features/chat/components/ChatHeader";
+import { JitsiCall } from "../features/call/JitsiCall";
 
 function ChatWindow({
   activeChat,
@@ -42,6 +39,11 @@ function ChatWindow({
   const [participantsCount, setParticipantsCount] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [messageSearchQuery, setMessageSearchQuery] = useState("");
+
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [isStartingCall, setIsStartingCall] = useState(false);
+  const [callRoomName, setCallRoomName] = useState(null);
+
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const { getUser } = useAuth();
@@ -121,6 +123,33 @@ function ChatWindow({
     }
   };
 
+  const handleStartCall = async () => {
+    if (isStartingCall) return;
+    setIsStartingCall(true);
+    try {
+      const response = await studyGroupAPI.startCallSession(activeChat.id);
+      const meetingLink = response?.data?.meeting?.meeting_link;
+
+      if (meetingLink) {
+        const roomName = new URL(meetingLink).pathname.substring(1);
+        setCallRoomName(roomName);
+        setIsCallActive(true);
+      } else {
+        throw new Error("Meeting link was not provided by the server.");
+      }
+    } catch (error) {
+      console.error("Failed to start call session:", error);
+      toast.error(error.response?.data?.message || "Could not start the call.");
+    } finally {
+      setIsStartingCall(false);
+    }
+  };
+
+  const handleEndCall = () => {
+    setIsCallActive(false);
+    setCallRoomName(null);
+  };
+
   const handleInputKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -178,6 +207,7 @@ function ChatWindow({
         onShowParticipants={() => setShowParticipantsPopup(true)}
         onToggleSearch={() => setIsSearching((prev) => !prev)}
         onShowActions={() => setShowActionsPopup(true)}
+        onStartCall={handleStartCall}
       />
 
       {isSearching && (
@@ -437,6 +467,25 @@ function ChatWindow({
         onLeaveSuccess={handleLeaveSuccessAndClosePopup}
         onGroupDetailsUpdate={onGroupDetailsUpdate}
       />
+
+      <Dialog open={isCallActive} onOpenChange={handleEndCall}>
+        <DialogContent className="max-w-full w-full h-full p-0 gap-0 border-0">
+          {isStartingCall ? (
+            <div className="flex h-full w-full items-center justify-center bg-gray-800 text-white">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2">Starting call...</span>
+            </div>
+          ) : (
+            callRoomName && (
+              <JitsiCall
+                roomName={callRoomName}
+                userDisplayName={`${user.first_name} ${user.last_name}`}
+                onCallEnd={handleEndCall}
+              />
+            )
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
