@@ -19,10 +19,6 @@ function ChatSidebar({
       chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase());
 
-    if (activeTab === "Unread") {
-      return matchesSearch && chat.unreadCount > 0;
-    }
-
     return matchesSearch;
   });
 
