@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import ChatSidebar from "@/components/ChatSidebar";
 import ChatWindow from "@/components/ChatWindow";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,99 +27,87 @@ const Chatroom = () => {
     updateMessageStatus,
   } = usePusherChat(selectedChat?.id || null);
 
-  //  Fetch user's study groups (initial load)
-  useEffect(() => {
-    const fetchGroups = async () => {
-      setLoadingChats(true);
-      try {
-        const [groupsData, coursesData] = await Promise.all([
-          studyGroupAPI.getUserGroups(),
-          studyGroupAPI.getCourses(),
-        ]);
+  const fetchChatsList = useCallback(async () => {
+    setLoadingChats(true);
+    try {
+      const [groupsData, coursesData] = await Promise.all([
+        studyGroupAPI.getUserGroups(),
+        studyGroupAPI.getCourses(),
+      ]);
 
-        if (groupsData?.data?.length) {
-          const coursesMap = new Map(
-            coursesData?.map((course) => [course.id.toString(), course]) || []
-          );
+      if (groupsData?.data) {
+        const coursesMap = new Map(
+          coursesData?.map((c) => [c.id.toString(), c]) || []
+        );
+        const transformed = groupsData.data
+          .filter((group) => group && group.id)
+          .map((group) => {
+            const course = coursesMap.get(group.course_id);
+            const lastMsg = group.last_message;
+            return {
+              id: group.id,
+              groupId: group.group_id,
+              name: group.group_name,
+              courseCode: course?.course_code || `COURSE ${group.course_id}`,
+              courseName: course?.course_name || "",
+              lastMessage:
+                lastMsg?.message || group.description || "Start chatting...",
+              time: formatMessageTime(lastMsg?.created_at || group.updated_at),
+              avatar: null,
+              isGroup: true,
+              isPinned: false,
+              lastMessageFromMe: lastMsg?.user_id == user?.id,
+              lastMessageRead: lastMsg?.status === "read",
+              lastMessageDelivered: lastMsg?.status === "delivered",
+              is_restricted: group.is_restricted || false,
+              currentUserRole: group.current_user_role || "Member",
+              pendingRequest:
+                Number(group.created_by) === Number(user?.id) &&
+                group.pending_requests?.length > 0
+                  ? { userName: group.pending_requests[0].user_name }
+                  : null,
+            };
+          });
 
-          const transformed = groupsData.data
-            .filter((group) => group && group.id)
-            .map((group) => {
-              const course = coursesMap.get(group.course_id);
-              const lastMsg = group.last_message;
-              const lastMessageFromMe = lastMsg?.user_id == user?.id;
+        transformed.sort((a, b) => new Date(b.time) - new Date(a.time));
 
-              return {
-                id: group.id,
-                groupId: group.group_id,
-                name: group.group_name,
-                courseCode: course?.course_code || `COURSE ${group.course_id}`,
-                courseName: course?.course_name || "",
-                lastMessage:
-                  lastMsg?.message || group.description || "Start chatting...",
-                time: formatMessageTime(
-                  lastMsg?.created_at || group.updated_at
-                ),
-                avatar: null,
-                isGroup: true,
-                isPinned: false,
-                unreadCount: group.unread_count || 0,
-                lastMessageFromMe: lastMessageFromMe,
-                lastMessageRead: lastMsg?.status === "read",
-                lastMessageDelivered: lastMsg?.status === "delivered",
-                is_restricted: group.is_restricted || false,
-                currentUserRole: group.current_user_role || "Member",
-                pendingRequest:
-                  Number(group.created_by) === Number(user?.id) &&
-                  group.pending_requests?.length > 0
-                    ? { userName: group.pending_requests[0].user_name }
-                    : null,
-              };
-            })
-            .sort((a, b) => {
-              const timeA = new Date(a.time);
-              const timeB = new Date(b.time);
-              return timeB - timeA;
-            });
+        setChats(transformed);
 
-          setChats(transformed);
-          if (transformed.length > 0) {
-            setSelectedChat(transformed[0]);
-          }
+        if (transformed.length > 0 && !selectedChat) {
+          setSelectedChat(transformed[0]);
         }
-      } catch (err) {
-        console.error("Error fetching groups:", err);
-      } finally {
-        setLoadingChats(false);
       }
-    };
+    } catch (err) {
+      console.error("Fetch error:", err);
+      toast.error("Failed to load your chats.");
+    } finally {
+      setLoadingChats(false);
+    }
+  }, [user?.id, selectedChat]);
 
-    fetchGroups();
-  }, [user?.id]);
+  // Initial load
+  useEffect(() => {
+    fetchChatsList();
+  }, [fetchChatsList]);
 
   // Fetch detailed group info when a chat is selected
   useEffect(() => {
     const fetchRoleAndDetails = async () => {
       if (!selectedChat?.id || !user?.id) return;
-
       try {
         const { data } = await studyGroupAPI.getGroupDetails(selectedChat.id);
         const members = data?.members || [];
         const currentMember = members.find((m) => m.user.id === user.id);
         const role = currentMember?.role || "Member";
-
-        // Update selectedChat with the accurate role
-        setSelectedChat((prev) => {
-          if (prev && prev.id === selectedChat.id) {
-            return { ...prev, currentUserRole: role };
-          }
-          return prev;
-        });
+        setSelectedChat((prev) =>
+          prev && prev.id === selectedChat.id
+            ? { ...prev, currentUserRole: role }
+            : prev
+        );
       } catch (error) {
         console.error("Failed to fetch group details for role:", error);
       }
     };
-
     fetchRoleAndDetails();
   }, [selectedChat?.id, user?.id]);
 
@@ -128,27 +116,17 @@ const Chatroom = () => {
     const fetchMessages = async () => {
       if (!selectedChat?.id) return;
       clearMessages();
-
       try {
         const data = await chatAPI.getMessages(selectedChat.id);
         const formatted = (data || []).map((msg) => ({
           ...msg,
           created_at: new Date(msg.created_at).toISOString(),
         }));
-
         initializeMessages([...formatted].reverse());
-
-        setChats((prevChats) =>
-          prevChats.map((chat) =>
-            chat.id === selectedChat.id ? { ...chat, unreadCount: 0 } : chat
-          )
-        );
 
         setTimeout(() => {
           formatted.forEach((msg) => {
-            if (msg.user_id != user?.id) {
-              updateMessageStatus(msg.id, "read");
-            }
+            if (msg.user_id != user?.id) updateMessageStatus(msg.id, "read");
           });
         }, 1000);
       } catch (err) {
@@ -157,7 +135,6 @@ const Chatroom = () => {
         initializeMessages([]);
       }
     };
-
     fetchMessages();
   }, [
     selectedChat?.id,
@@ -167,19 +144,16 @@ const Chatroom = () => {
     user?.id,
   ]);
 
-  // Update chat list when new messages arrive
+  // Update chat list when new messages arrive (for the active chat)
   useEffect(() => {
     if (!echoMessages || echoMessages.length === 0) return;
-
     const lastMessage = echoMessages[echoMessages.length - 1];
     if (!lastMessage) return;
-
     setChats((prevChats) => {
       const updatedChats = prevChats.map((chat) => {
         if (chat.id === lastMessage.group_id) {
           const isFromMe = lastMessage.user_id == user?.id;
           const isActiveChat = chat.id === selectedChat?.id;
-
           return {
             ...chat,
             lastMessage: lastMessage.message,
@@ -187,37 +161,25 @@ const Chatroom = () => {
             lastMessageFromMe: isFromMe,
             lastMessageRead: lastMessage.status === "read",
             lastMessageDelivered: lastMessage.status === "delivered",
-            unreadCount:
-              !isFromMe && !isActiveChat
-                ? (chat.unreadCount || 0) + 1
-                : isActiveChat
-                ? 0
-                : chat.unreadCount,
           };
         }
         return chat;
       });
       return updatedChats;
     });
-
     if (
       lastMessage.group_id === selectedChat?.id &&
       lastMessage.user_id != user?.id
     ) {
-      setTimeout(() => {
-        updateMessageStatus(lastMessage.id, "read");
-      }, 500);
+      setTimeout(() => updateMessageStatus(lastMessage.id, "read"), 500);
     }
   }, [echoMessages, user?.id, selectedChat?.id]);
 
-  // Handle send message
   const handleSendMessage = async (messageText) => {
     if (!selectedChat?.id) return;
     try {
       const response = await chatAPI.sendMessage(selectedChat.id, messageText);
-      if (!response?.data) {
-        throw new Error("Failed to send message");
-      }
+      if (!response?.data) throw new Error("Failed to send message");
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
@@ -225,7 +187,6 @@ const Chatroom = () => {
     }
   };
 
-  // Handle pin toggle
   const handlePinToggle = (chatId) => {
     setChats((prevChats) =>
       prevChats.map((chat) =>
@@ -234,7 +195,6 @@ const Chatroom = () => {
     );
   };
 
-  // Handle restriction update from child components
   const handleRestrictionUpdate = (chatId, isRestricted) => {
     setChats((prevChats) =>
       prevChats.map((chat) =>
@@ -250,7 +210,6 @@ const Chatroom = () => {
     const originalChats = [...chats];
     const updatedChats = originalChats.filter((c) => c.id !== groupId);
     setChats(updatedChats);
-
     if (selectedChat?.id === groupId) {
       if (updatedChats.length > 0) {
         const removedIndex = originalChats.findIndex((c) => c.id === groupId);
