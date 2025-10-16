@@ -145,6 +145,11 @@ export const studyGroupAPI = {
     );
     return response.data;
   },
+
+  startCallSession: async (groupId) => {
+    const response = await api.post(`/study-groups/${groupId}/start-session`);
+    return response.data;
+  },
 };
 
 export const notificationsAPI = {
