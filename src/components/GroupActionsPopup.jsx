@@ -22,6 +22,7 @@ import EditGroupName from "../features/groupDetails/components/EditGroupName";
 import EditGroupDescription from "../features/groupDetails/components/EditGroupDescription";
 import MediaTab from "../features/groupDetails/components/MediaTab";
 import FilesTab from "../features/groupDetails/components/FilesTab";
+import ShareContentTab from "../features/groupDetails/components/ShareContentTab";
 import { formatGroupOverviewDateTime } from "@/lib/formatMessageTime";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -31,7 +32,6 @@ const baseSidebarItems = [
   { id: "media", label: "Media", icon: <Image /> },
   { id: "files", label: "Files", icon: <File /> },
   { id: "links", label: "Links", icon: <Link /> },
-  { id: "mute", label: "Mute", icon: <BellOff /> },
   {
     id: "permission",
     label: "Permission",
@@ -215,6 +215,9 @@ const GroupActionsPopup = ({
         return <MediaTab groupId={groupId} />;
       case "files":
         return <FilesTab groupId={groupId} />;
+
+      case "screen_sharing":
+        return <ShareContentTab />
       default:
         return (
           <div className="p-6">
