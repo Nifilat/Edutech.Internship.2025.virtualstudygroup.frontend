@@ -22,13 +22,13 @@ import EditGroupName from "../features/groupDetails/components/EditGroupName";
 import EditGroupDescription from "../features/groupDetails/components/EditGroupDescription";
 import MediaTab from "../features/groupDetails/components/MediaTab";
 import FilesTab from "../features/groupDetails/components/FilesTab";
-import ShareContentTab from "../features/groupDetails/components/ShareContentTab";
+import LinksTab from "../features/groupDetails/components/LinksTab";
 import { formatGroupOverviewDateTime } from "@/lib/formatMessageTime";
 import { useAuth } from "@/hooks/useAuth";
 
 const baseSidebarItems = [
   { id: "overview", label: "Overview", icon: <Info /> },
-  { id: "screen_sharing", label: "Screen sharing", icon: <Monitor /> },
+  // { id: "screen_sharing", label: "Screen sharing", icon: <Monitor /> },
   { id: "media", label: "Media", icon: <Image /> },
   { id: "files", label: "Files", icon: <File /> },
   { id: "links", label: "Links", icon: <Link /> },
@@ -216,8 +216,9 @@ const GroupActionsPopup = ({
       case "files":
         return <FilesTab groupId={groupId} />;
 
-      case "screen_sharing":
-        return <ShareContentTab />
+      case "links":
+        return <LinksTab groupId={groupId} />;
+
       default:
         return (
           <div className="p-6">
