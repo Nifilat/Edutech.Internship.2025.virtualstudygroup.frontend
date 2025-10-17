@@ -181,10 +181,8 @@ export const userAPI = {
 };
 
 export const chatAPI = {
-  sendMessage: async (groupId, messageText) => {
-    const response = await api.post(`/groups/${groupId}/messages`, {
-      message: messageText,
-    });
+  sendMessage: async (groupId, payload) => {
+    const response = await api.post(`/groups/${groupId}/messages`, payload);
     return response.data;
   },
 
