@@ -30,10 +30,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginAttempt = error.config.url.includes("/auth/login");
+
+    if (error.response?.status === 401 && !isLoginAttempt) {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      window.location.replace = "/login";
     }
     return Promise.reject(error);
   }
@@ -209,6 +211,11 @@ export const chatAPI = {
     const response = await api.get(`/groups/file/download/${fileId}`, {
       responseType: "blob",
     });
+    return response.data;
+  },
+
+  deleteMessage: async (messageId) => {
+    const response = await api.delete(`/messages/${messageId}`);
     return response.data;
   },
 };
