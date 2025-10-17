@@ -205,10 +205,10 @@ const Chatroom = () => {
     }
   }, [echoMessages, user?.id, selectedChat?.id]);
 
-  const handleSendMessage = async (messageText) => {
+  const handleSendMessage = async (payload) => {
     if (!selectedChat?.id) return;
     try {
-      const response = await chatAPI.sendMessage(selectedChat.id, messageText);
+      const response = await chatAPI.sendMessage(selectedChat.id, payload);
       if (!response?.data) throw new Error("Failed to send message");
     } catch (error) {
       console.error("Error sending message:", error);
