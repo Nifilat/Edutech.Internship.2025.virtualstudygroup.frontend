@@ -11,12 +11,14 @@ import FileUploadDropdown from "../features/chat/components/FileUploadModal";
 import { useAuth } from "@/hooks/useAuth";
 import { studyGroupAPI, chatAPI } from "@/lib/api";
 import { toast } from "sonner";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, MoreVertical } from "lucide-react";
 import { formatDateSeparator } from "@/lib/formatMessageTime";
 import GroupActionsPopup from "./GroupActionsPopup";
 import { FileMessage } from "../features/chat/components/FileMessage";
 import { ChatHeader } from "../features/chat/components/ChatHeader";
 import { JitsiCall } from "../features/call/JitsiCall";
+import { MessageContextMenu } from "../features/chat/components/MessageContextMenu";
+import { ReplyPreview } from "../features/chat/components/ReplyPreview";
 
 function ChatWindow({
   activeChat,
@@ -189,7 +191,7 @@ function ChatWindow({
   }
 
   const filteredMessages = echoMessages.filter((msg) =>
-    msg.message.toLowerCase().includes(messageSearchQuery.toLowerCase())
+    msg.message?.toLowerCase().includes(messageSearchQuery.toLowerCase())
   );
 
   const isChatRestrictedForUser =
@@ -291,10 +293,11 @@ function ChatWindow({
                     </div>
                   )}
                   <div
-                    className={`flex ${
+                    className={`group flex items-start ${
                       isOwn ? "justify-end" : "justify-start"
                     }`}
                   >
+                    
                     <div
                       className={`flex max-w-xs lg:max-w-md ${
                         isOwn ? "flex-row-reverse" : "flex-row"
