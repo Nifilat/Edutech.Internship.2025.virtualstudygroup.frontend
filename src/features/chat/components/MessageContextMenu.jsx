@@ -1,14 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
 import {
   Reply,
   Copy,
-  Forward,
-  Star,
   Pin,
   Trash2,
   Share,
   CheckSquare,
+  Plus,
 } from "lucide-react";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 
 const menuItems = [
   { label: "Reply", icon: Reply, action: "reply" },
@@ -27,6 +33,7 @@ export const MessageContextMenu = ({
   position,
   onClose,
   onAction,
+  onReact,
 }) => {
   const menuRef = useRef(null);
   const [showFullPicker, setShowFullPicker] = useState(false);
@@ -71,7 +78,7 @@ export const MessageContextMenu = ({
           );
         })}
       </ul>
-      <div className="flex items-center justify-around p-2 bg-gray-50 border-t">
+      <div className="flex items-center justify-around p-2 bg-gray-50 border-t relative">
         {emojiReactions.map((emoji) => (
           <button
             key={emoji}
@@ -80,6 +87,23 @@ export const MessageContextMenu = ({
             {emoji}
           </button>
         ))}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="p-1 rounded-full hover:bg-gray-200">
+              <Plus className="w-5 h-5 text-gray-600" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="p-0 border-0">
+            <Picker
+              data={data}
+              onEmojiSelect={(emoji) => {
+                onReact(emoji.native, message);
+                onClose();
+              }}
+              theme="light"
+            />
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );

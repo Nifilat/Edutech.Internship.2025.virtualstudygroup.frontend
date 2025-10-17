@@ -20,6 +20,58 @@ import { JitsiCall } from "../features/call/JitsiCall";
 import { MessageContextMenu } from "../features/chat/components/MessageContextMenu";
 import { ReplyPreview } from "../features/chat/components/ReplyPreview";
 
+const MessageReactions = ({ reactions }) => {
+  if (!reactions || reactions.length === 0) return null;
+  return (
+    <div className="absolute -bottom-3 left-4 bg-white shadow-md rounded-full px-2 py-0.5 text-xs flex items-center gap-1">
+      {reactions.map((r, i) => (
+        <span key={i}>{r.emoji}</span>
+      ))}
+      <span className="ml-1 text-gray-600">{reactions.length}</span>
+    </div>
+  );
+};
+
+const MessageContent = ({ msg }) => {
+  if (msg.file) {
+    return <FileMessage msg={msg} />;
+  }
+
+  const parts = msg.message.split("\n");
+  const repliedText = parts[0].startsWith(">")
+    ? parts[0].substring(1).trim()
+    : null;
+  const mainMessage = repliedText ? parts.slice(1).join("\n") : msg.message;
+
+  if (repliedText) {
+    return (
+      <div className="px-4 py-2">
+        <div className="p-2 mb-1 bg-black/5 rounded border-l-2 border-orange-400">
+          <p className="text-xs font-semibold text-orange-600">
+            {msg.user.first_name}
+          </p>
+          <p className="text-sm text-gray-600 truncate">{repliedText}</p>
+        </div>
+        <p
+          className="text-sm font-normal"
+          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+        >
+          {mainMessage}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <p
+      className="text-sm font-normal px-4 py-2"
+      style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+    >
+      {msg.message}
+    </p>
+  );
+};
+
 function ChatWindow({
   activeChat,
   echoMessages,
@@ -45,6 +97,17 @@ function ChatWindow({
   const [isCallActive, setIsCallActive] = useState(false);
   const [isStartingCall, setIsStartingCall] = useState(false);
   const [callRoomName, setCallRoomName] = useState(null);
+
+  const [menuState, setMenuState] = useState({
+    isOpen: false,
+    position: {},
+    message: null,
+  });
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [localMessages, setLocalMessages] = useState([]);
+  useEffect(() => {
+    setLocalMessages(echoMessages.map((msg) => ({ ...msg, reactions: [] }))); // Initialize with empty reactions
+  }, [echoMessages]);
 
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -88,16 +151,24 @@ function ChatWindow({
 
   const handleSendMessage = async () => {
     if (!message.trim() || !activeChat) return;
-    const messageText = message.trim();
-    setMessage("");
-    setSending(true);
 
+    let messageToSend = message.trim();
+
+    if (replyingTo) {
+      const originalMessage = replyingTo.message || "Attachment";
+      // Format the reply into a single string
+      messageToSend = `> ${originalMessage}\n${messageToSend}`;
+    }
+
+    setMessage("");
+    setReplyingTo(null);
+    setSending(true);
     try {
-      await onSendMessage(messageText);
+      // Send the single formatted string to the parent
+      await onSendMessage(messageToSend);
     } catch (error) {
-      console.error("Error sending message:", error);
       toast.error("Failed to send message");
-      setMessage(messageText);
+      setMessage(message.trim()); // Restore on failure
     } finally {
       setSending(false);
     }
@@ -130,7 +201,7 @@ function ChatWindow({
     setIsStartingCall(true);
     try {
       const response = await studyGroupAPI.startCallSession(activeChat.id);
-      const meetingLink = response?.data?.meeting?.meeting_link;
+      const meetingLink = response?.data?.join_url;
 
       if (meetingLink) {
         const roomName = new URL(meetingLink).pathname.substring(1);
@@ -170,6 +241,64 @@ function ChatWindow({
       onLeaveGroupSuccess(groupId);
     }
     setShowActionsPopup(false);
+  };
+
+  const handleOpenMenu = (event, message) => {
+    event.preventDefault();
+    const { clientX, clientY } = event;
+    setMenuState({
+      isOpen: true,
+      position: { x: clientX, y: clientY },
+      message,
+    });
+  };
+
+  const handleMenuAction = async (action, message) => {
+    switch (action) {
+      case "reply":
+        setReplyingTo(message);
+        break;
+      case "copy":
+        if (message.message) {
+          navigator.clipboard.writeText(message.message);
+          toast.success("Message copied to clipboard");
+        }
+        break;
+      case "delete":
+        if (window.confirm("Are you sure you want to delete this message?")) {
+          try {
+            await chatAPI.deleteMessage(message.id);
+            toast.success("Message deleted");
+            // Assuming Pusher will broadcast the deletion and update the UI
+          } catch (error) {
+            toast.error("Failed to delete message.");
+          }
+        }
+        break;
+      case "pin":
+      case "share":
+      case "select":
+        toast.info(`'${action}' feature is not yet implemented.`);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleReaction = (emoji, targetMessage) => {
+    toast.info(`You reacted with ${emoji}. (UI-only for now)`);
+    setLocalMessages((prevMessages) =>
+      prevMessages.map((msg) => {
+        if (msg.id === targetMessage.id) {
+          const newReactions = [
+            ...(msg.reactions || []),
+            { emoji, user: user.first_name },
+          ];
+          return { ...msg, reactions: newReactions };
+        }
+        return msg;
+      })
+    );
   };
 
   if (!activeChat) {
@@ -293,68 +422,59 @@ function ChatWindow({
                     </div>
                   )}
                   <div
-                    className={`group flex items-start ${
+                    className={`group flex items-start gap-2 ${
                       isOwn ? "justify-end" : "justify-start"
                     }`}
                   >
-                    
+                    {!isOwn && (
+                      <Avatar className="w-8 h-8 mt-1 flex-shrink-0">
+                        <AvatarImage src={msg.user?.avatar_url} />
+                        <AvatarFallback>
+                          {msg.user?.first_name?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
                     <div
-                      className={`flex max-w-xs lg:max-w-md ${
+                      className={`group flex items-center gap-2 ${
                         isOwn ? "flex-row-reverse" : "flex-row"
                       }`}
                     >
-                      {!isOwn && (
-                        <Avatar className="w-8 h-8 mr-2">
-                          <AvatarImage
-                            src={userAvatar}
-                            alt={userName}
-                            onError={(e) => (e.target.style.display = "none")}
-                          />
-                          <AvatarFallback className="bg-orange-200 text-orange-800 text-xs">
-                            {userInitials}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                      <div
-                        className={`px-4 py-2 shadow-sm rounded-lg ${
-                          isOwn
-                            ? "bg-orange-light text-black-normal rounded-br-none"
-                            : "bg-grey-light text-black-normal rounded-bl-none"
-                        }`}
-                      >
-                        {!isOwn && (
-                          <p className="text-xs text-gray-600 mb-1 font-medium">
-                            {userName}
-                          </p>
-                        )}
-                        {msg.file ? (
-                          <FileMessage msg={msg} />
-                        ) : (
-                          <p
-                            className="text-sm font-normal px-4 py-2"
-                            style={{
-                              whiteSpace: "pre-wrap",
-                              wordBreak: "break-word",
-                            }}
-                          >
-                            {msg.message}
-                          </p>
-                        )}
-                        <div className="flex items-center justify-between mt-1">
-                          <p className="text-xs text-gray-400">
-                            {msg.created_at
-                              ? new Date(msg.created_at).toLocaleTimeString(
-                                  [],
-                                  {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  }
-                                )
-                              : ""}
-                          </p>
+                      <div className="relative">
+                        <div
+                          className={`shadow-sm rounded-lg ${
+                            isOwn
+                              ? "bg-orange-light text-black-normal rounded-br-none"
+                              : "bg-white text-black-normal rounded-bl-none"
+                          }`}
+                        >
+                          {!isOwn && (
+                            <p className="text-xs text-orange-normal mb-1 font-medium px-4 pt-2">
+                              {msg.user.first_name}
+                            </p>
+                          )}
+
+                          {/* Use the new MessageContent component */}
+                          <MessageContent msg={msg} />
                         </div>
+                        <MessageReactions reactions={msg.reactions} />
                       </div>
+                      <button
+                        onClick={(e) => handleOpenMenu(e, msg)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full self-center hover:bg-black/5"
+                      >
+                        <MoreVertical className="w-4 h-4 text-gray-500" />
+                      </button>
                     </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-gray-400">
+                      {msg.created_at
+                        ? new Date(msg.created_at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                    </p>
                   </div>
                 </React.Fragment>
               );
@@ -367,6 +487,8 @@ function ChatWindow({
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      <ReplyPreview message={replyingTo} onCancel={() => setReplyingTo(null)} />
 
       {/* Message Input: Conditionally Rendered */}
       {isChatRestrictedForUser ? (
@@ -489,6 +611,18 @@ function ChatWindow({
           )}
         </DialogContent>
       </Dialog>
+
+      {menuState.isOpen && (
+        <MessageContextMenu
+          message={menuState.message}
+          position={menuState.position}
+          onClose={() =>
+            setMenuState({ isOpen: false, position: {}, message: null })
+          }
+          onAction={handleMenuAction}
+          onReact={handleReaction}
+        />
+      )}
     </div>
   );
 }

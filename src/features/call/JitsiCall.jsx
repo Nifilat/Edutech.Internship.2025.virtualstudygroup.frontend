@@ -16,7 +16,7 @@ export const JitsiCall = ({ roomName, userDisplayName, onCallEnd }) => {
         disableModeratorIndicator: true,
         startScreenSharing: false,
         enableEmailInStats: false,
-        prejoinPageEnabled: false,
+        prejoinPageEnabled: true,
       }}
       interfaceConfigOverwrite={{
         SHOW_JITSI_WATERMARK: false,
