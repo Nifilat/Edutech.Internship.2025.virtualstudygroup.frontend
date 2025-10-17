@@ -235,11 +235,11 @@ const NotificationDropdown = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                    <div className="flex items-center gap-4 flex-shrink-0 ml-2">
                       {handledStatus === "approve" ? (
-                        <span className="text-sm text-green-600">Approved</span>
+                        <span className="text-xs text-green-600">Approved</span>
                       ) : handledStatus === "reject" ? (
-                        <span className="text-sm text-red-600">Rejected</span>
+                        <span className="text-xs text-red-600">Rejected</span>
                       ) : (
                         <>
                           <Button
@@ -321,7 +321,7 @@ const NotificationDropdown = ({
                   </div>
 
                   <span
-                    className={`text-sm font-medium ${
+                    className={`text-xs font-medium ${
                       isApproved ? "text-green-600" : "text-red-600"
                     }`}
                   >
