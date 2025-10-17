@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import {
@@ -36,7 +36,6 @@ export const MessageContextMenu = ({
   onReact,
 }) => {
   const menuRef = useRef(null);
-  const [showFullPicker, setShowFullPicker] = useState(false);
 
   // Close the menu if the user clicks outside of it
   useEffect(() => {
@@ -82,6 +81,7 @@ export const MessageContextMenu = ({
         {emojiReactions.map((emoji) => (
           <button
             key={emoji}
+            onClick={() => {onReact(emoji, message); onClose();}}
             className="p-1 text-2xl rounded-full hover:bg-gray-200 transition-transform transform hover:scale-125"
           >
             {emoji}

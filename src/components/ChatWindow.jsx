@@ -22,46 +22,51 @@ import { ReplyPreview } from "../features/chat/components/ReplyPreview";
 
 const MessageReactions = ({ reactions }) => {
   if (!reactions || reactions.length === 0) return null;
+  const uniqueEmojis = [...new Set(reactions.map((r) => r.emoji))];
   return (
-    <div className="absolute -bottom-3 left-4 bg-white shadow-md rounded-full px-2 py-0.5 text-xs flex items-center gap-1">
-      {reactions.map((r, i) => (
-        <span key={i}>{r.emoji}</span>
+    <div className="absolute -bottom-3 left-4 bg-white shadow-md rounded-full px-1.5 py-0.5 text-xs flex items-center gap-1 cursor-pointer">
+      {uniqueEmojis.slice(0, 3).map((emoji, i) => (
+        <span key={i}>{emoji}</span>
       ))}
-      <span className="ml-1 text-gray-600">{reactions.length}</span>
+      <span className="ml-1 text-gray-600 font-medium">{reactions.length}</span>
     </div>
   );
 };
 
-const MessageContent = ({ msg }) => {
+const MessageContent = ({ msg, allMessages }) => {
   if (msg.file) {
     return <FileMessage msg={msg} />;
   }
 
-  const parts = msg.message.split("\n");
-  const repliedText = parts[0].startsWith(">")
-    ? parts[0].substring(1).trim()
-    : null;
-  const mainMessage = repliedText ? parts.slice(1).join("\n") : msg.message;
-
-  if (repliedText) {
-    return (
-      <div className="px-4 py-2">
-        <div className="p-2 mb-1 bg-black/5 rounded border-l-2 border-orange-400">
-          <p className="text-xs font-semibold text-orange-600">
-            {msg.user.first_name}
-          </p>
-          <p className="text-sm text-gray-600 truncate">{repliedText}</p>
-        </div>
-        <p
-          className="text-sm font-normal"
-          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-        >
-          {mainMessage}
-        </p>
-      </div>
+  // Check if this message is a reply to another message
+  if (msg.replying_to_id) {
+    const originalMessage = allMessages.find(
+      (m) => m.id === msg.replying_to_id
     );
+
+    if (originalMessage) {
+      return (
+        <div className="px-4 py-2">
+          <div className="p-2 mb-1 bg-black/5 rounded border-l-2 border-orange-400">
+            <p className="text-xs font-semibold text-orange-600">
+              {originalMessage.user.first_name}
+            </p>
+            <p className="text-sm text-gray-600 truncate">
+              {originalMessage.message || "Attachment"}
+            </p>
+          </div>
+          <p
+            className="text-sm font-normal"
+            style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+          >
+            {msg.message}
+          </p>
+        </div>
+      );
+    }
   }
 
+  // Default rendering for a normal message
   return (
     <p
       className="text-sm font-normal px-4 py-2"
@@ -106,7 +111,13 @@ function ChatWindow({
   const [replyingTo, setReplyingTo] = useState(null);
   const [localMessages, setLocalMessages] = useState([]);
   useEffect(() => {
-    setLocalMessages(echoMessages.map((msg) => ({ ...msg, reactions: [] }))); // Initialize with empty reactions
+    // Initialize or update local messages when the prop changes
+    setLocalMessages(
+      (echoMessages || []).map((msg) => ({
+        ...msg,
+        reactions: msg.reactions || [],
+      }))
+    );
   }, [echoMessages]);
 
   const inputRef = useRef(null);
@@ -151,24 +162,18 @@ function ChatWindow({
 
   const handleSendMessage = async () => {
     if (!message.trim() || !activeChat) return;
-
-    let messageToSend = message.trim();
-
-    if (replyingTo) {
-      const originalMessage = replyingTo.message || "Attachment";
-      // Format the reply into a single string
-      messageToSend = `> ${originalMessage}\n${messageToSend}`;
-    }
-
+    const payload = {
+      message: message.trim(),
+      replying_to_id: replyingTo ? replyingTo.id : null,
+    };
     setMessage("");
     setReplyingTo(null);
     setSending(true);
     try {
-      // Send the single formatted string to the parent
-      await onSendMessage(messageToSend);
+      await onSendMessage(payload);
     } catch (error) {
       toast.error("Failed to send message");
-      setMessage(message.trim()); // Restore on failure
+      setMessage(payload.message);
     } finally {
       setSending(false);
     }
@@ -290,11 +295,24 @@ function ChatWindow({
     setLocalMessages((prevMessages) =>
       prevMessages.map((msg) => {
         if (msg.id === targetMessage.id) {
-          const newReactions = [
-            ...(msg.reactions || []),
-            { emoji, user: user.first_name },
-          ];
-          return { ...msg, reactions: newReactions };
+          const existingReaction = msg.reactions.find(
+            (r) => r.user === user.first_name
+          );
+          if (existingReaction) {
+            // User is changing their reaction
+            return {
+              ...msg,
+              reactions: msg.reactions.map((r) =>
+                r.user === user.first_name ? { ...r, emoji } : r
+              ),
+            };
+          } else {
+            // User is adding a new reaction
+            return {
+              ...msg,
+              reactions: [...msg.reactions, { emoji, user: user.first_name }],
+            };
+          }
         }
         return msg;
       })
@@ -435,7 +453,7 @@ function ChatWindow({
                       </Avatar>
                     )}
                     <div
-                      className={`group flex items-center gap-2 ${
+                      className={`flex items-center gap-2 ${
                         isOwn ? "flex-row-reverse" : "flex-row"
                       }`}
                     >
@@ -452,9 +470,19 @@ function ChatWindow({
                               {msg.user.first_name}
                             </p>
                           )}
-
-                          {/* Use the new MessageContent component */}
-                          <MessageContent msg={msg} />
+                          <MessageContent
+                            msg={msg}
+                            allMessages={localMessages}
+                          />
+                          {/* ✨ FIX: Timestamp is now inside the message bubble */}
+                          <div className="px-4 pb-1.5 -mt-1 flex justify-end items-center gap-1">
+                            <span className="text-[10px] text-gray-500">
+                              {new Date(msg.created_at).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
                         </div>
                         <MessageReactions reactions={msg.reactions} />
                       </div>
@@ -465,16 +493,6 @@ function ChatWindow({
                         <MoreVertical className="w-4 h-4 text-gray-500" />
                       </button>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-gray-400">
-                      {msg.created_at
-                        ? new Date(msg.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : ""}
-                    </p>
                   </div>
                 </React.Fragment>
               );
