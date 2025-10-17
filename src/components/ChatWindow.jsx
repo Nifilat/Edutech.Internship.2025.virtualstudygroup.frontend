@@ -19,6 +19,7 @@ import { ChatHeader } from "../features/chat/components/ChatHeader";
 import { JitsiCall } from "../features/call/JitsiCall";
 import { MessageContextMenu } from "../features/chat/components/MessageContextMenu";
 import { ReplyPreview } from "../features/chat/components/ReplyPreview";
+import { Linkify } from "../utils/linkify";
 
 const MessageReactions = ({ reactions }) => {
   if (!reactions || reactions.length === 0) return null;
@@ -52,14 +53,16 @@ const MessageContent = ({ msg, allMessages }) => {
               {originalMessage.user.first_name}
             </p>
             <p className="text-sm text-gray-600 truncate">
-              {originalMessage.message || "Attachment"}
+              {/* ✨ Linkify the replied text */}
+              <Linkify text={originalMessage.message || "Attachment"} />
             </p>
           </div>
           <p
             className="text-sm font-normal"
             style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
           >
-            {msg.message}
+            {/* ✨ Linkify the main message text */}
+            <Linkify text={msg.message} />
           </p>
         </div>
       );
@@ -72,7 +75,8 @@ const MessageContent = ({ msg, allMessages }) => {
       className="text-sm font-normal px-4 py-2"
       style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
     >
-      {msg.message}
+      {/* ✨ Linkify the normal message text */}
+      <Linkify text={msg.message} />
     </p>
   );
 };
