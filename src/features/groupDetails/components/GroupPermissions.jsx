@@ -45,8 +45,8 @@ const GroupPermissions = ({ groupId, isRestricted, onRestrictionUpdate }) => {
               onToggle={() => {}} // No action
             />
             <PermissionItem
-              title="Add new members"
-              isToggled={true} // Assuming this is static for now
+              title="Invite new members"
+              isToggled={false} // Assuming this is static for now
               onToggle={() => {}} // No action
             />
           </div>
