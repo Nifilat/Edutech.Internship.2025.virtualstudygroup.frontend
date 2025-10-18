@@ -53,7 +53,6 @@ const MessageContent = ({ msg, allMessages }) => {
               {originalMessage.user.first_name}
             </p>
             <p className="text-sm text-gray-600 truncate">
-              {/* ✨ Linkify the replied text */}
               <Linkify text={originalMessage.message || "Attachment"} />
             </p>
           </div>
@@ -61,7 +60,6 @@ const MessageContent = ({ msg, allMessages }) => {
             className="text-sm font-normal"
             style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
           >
-            {/* ✨ Linkify the main message text */}
             <Linkify text={msg.message} />
           </p>
         </div>
@@ -75,7 +73,6 @@ const MessageContent = ({ msg, allMessages }) => {
       className="text-sm font-normal px-4 py-2"
       style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
     >
-      {/* ✨ Linkify the normal message text */}
       <Linkify text={msg.message} />
     </p>
   );
@@ -106,6 +103,7 @@ function ChatWindow({
   const [isCallActive, setIsCallActive] = useState(false);
   const [isStartingCall, setIsStartingCall] = useState(false);
   const [callRoomName, setCallRoomName] = useState(null);
+  const [jitsiToken, setJitsiToken] = useState(null);
 
   const [menuState, setMenuState] = useState({
     isOpen: false,
@@ -211,10 +209,12 @@ function ChatWindow({
     try {
       const response = await studyGroupAPI.startCallSession(activeChat.id);
       const meetingLink = response?.data?.join_url;
+      const token = response?.data?.jitsi_token;
 
       if (meetingLink) {
         const roomName = new URL(meetingLink).pathname.substring(1);
         setCallRoomName(roomName);
+        setJitsiToken(token);
         setIsCallActive(true);
       } else {
         throw new Error("Meeting link was not provided by the server.");
@@ -230,6 +230,7 @@ function ChatWindow({
   const handleEndCall = () => {
     setIsCallActive(false);
     setCallRoomName(null);
+    setJitsiToken(null);
   };
 
   const handleInputKeyDown = (e) => {
@@ -341,7 +342,7 @@ function ChatWindow({
     );
   }
 
-  const filteredMessages = echoMessages.filter((msg) =>
+  const filteredMessages = localMessages.filter((msg) =>
     msg.message?.toLowerCase().includes(messageSearchQuery.toLowerCase())
   );
 
@@ -478,7 +479,6 @@ function ChatWindow({
                             msg={msg}
                             allMessages={localMessages}
                           />
-                          {/* ✨ FIX: Timestamp is now inside the message bubble */}
                           <div className="px-4 pb-1.5 -mt-1 flex justify-end items-center gap-1">
                             <span className="text-[10px] text-gray-500">
                               {new Date(msg.created_at).toLocaleTimeString([], {
@@ -626,6 +626,7 @@ function ChatWindow({
             callRoomName && (
               <JitsiCall
                 roomName={callRoomName}
+                jwt={jitsiToken}
                 userDisplayName={`${user.first_name} ${user.last_name}`}
                 onCallEnd={handleEndCall}
               />
