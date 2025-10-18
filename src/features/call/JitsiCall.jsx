@@ -2,11 +2,12 @@ import React from "react";
 import { JitsiMeeting } from "@jitsi/react-sdk";
 import { Loader2 } from "lucide-react";
 
-export const JitsiCall = ({ roomName, userDisplayName, onCallEnd }) => {
+export const JitsiCall = ({ roomName, userDisplayName, onCallEnd, jwt }) => {
   return (
     <JitsiMeeting
       domain="meet.jit.si"
       roomName={roomName}
+      jwt={jwt}
       userInfo={{
         displayName: userDisplayName,
       }}
