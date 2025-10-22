@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Settings, Bell, ChevronDown } from "lucide-react";
+import { Settings, Bell, ChevronDown, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import NotificationDropdown from "./NotificationDropdown";
 import { notificationsAPI } from "@/lib/api";
 
-const Header = ({ pageTitle }) => {
+const Header = ({ pageTitle, onToggleSidebar }) => {
   const { logout, getUser } = useAuth();
   const user = getUser();
   const [notifications, setNotifications] = useState([]);
@@ -53,12 +53,19 @@ const Header = ({ pageTitle }) => {
   };
 
   return (
-    <header className="bg-card shadow-sm border-b border-border px-6 py-4 h-16 ">
+    <header className="fixed top-0 left-0 right-0 z-20 bg-card shadow-sm border-b border-border px-4 md:px-6 py-3 h-16 lg:ml-64 transition-all duration-300 ease-in-out ">
       <div className="flex items-center justify-between">
-        <div className="flex-1">
-          {pageTitle && (
-            <h1 className="text-2xl font-semibold text-foreground"></h1>
-          )}
+        <div className="flex items-center gap-2">
+            {/* Hamburger Button - visible only on smaller screens */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden" // Hide on large screens
+              onClick={onToggleSidebar} // Use the passed toggle function
+            >
+              <Menu className="w-6 h-6" />
+            </Button>
+    
         </div>
 
         <div className="flex items-center space-x-4">
