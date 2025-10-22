@@ -14,6 +14,9 @@ const MemberActionsPopup = ({
 }) => {
   if (!member) return null;
 
+  const isAdmin = member.role === "Admin";
+  const actionText = isAdmin ? "Remove admin role" : "Make group admin";
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-xs p-0 gap-0" showCloseButton={false}>
@@ -49,7 +52,7 @@ const MemberActionsPopup = ({
               className="w-full justify-between text-black-normal hover:bg-orange-light-hover h-auto py-3 font-normal rounded-[5px] mb-1"
               onClick={onMakeAdmin}
             >
-              Make group admin
+              {actionText}
               <UsersCheck className=" mr-3" />
             </Button>
 
