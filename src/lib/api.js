@@ -152,6 +152,11 @@ export const studyGroupAPI = {
     const response = await api.post(`/study-groups/${groupId}/start-session`);
     return response.data;
   },
+
+  toggleAdminStatus: async (groupId, userId) => {
+    const response = await api.post(`/study-groups/${groupId}/toggle-admin/${userId}`);
+    return response.data;
+  },
 };
 
 export const notificationsAPI = {
