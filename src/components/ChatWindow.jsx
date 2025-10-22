@@ -11,7 +11,7 @@ import FileUploadDropdown from "../features/chat/components/FileUploadModal";
 import { useAuth } from "@/hooks/useAuth";
 import { studyGroupAPI, chatAPI } from "@/lib/api";
 import { toast } from "sonner";
-import { Loader2, X, MoreVertical } from "lucide-react";
+import { Loader2, X, MoreVertical, Trash2, Check } from "lucide-react";
 import { formatDateSeparator } from "@/lib/formatMessageTime";
 import GroupActionsPopup from "./GroupActionsPopup";
 import { FileMessage } from "../features/chat/components/FileMessage";
@@ -112,6 +112,16 @@ function ChatWindow({
   });
   const [replyingTo, setReplyingTo] = useState(null);
   const [localMessages, setLocalMessages] = useState([]);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingStartTime, setRecordingStartTime] = useState(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingIntervalRef = useRef(null);
+
+  const [selectedMimeType, setSelectedMimeType] = useState("");
+
   useEffect(() => {
     // Initialize or update local messages when the prop changes
     setLocalMessages(
@@ -275,14 +285,21 @@ function ChatWindow({
         }
         break;
       case "delete":
-        if (window.confirm("Are you sure you want to delete this message?")) {
-          try {
-            await chatAPI.deleteMessage(message.id);
-            toast.success("Message deleted");
-            // Assuming Pusher will broadcast the deletion and update the UI
-          } catch (error) {
-            toast.error("Failed to delete message.");
-          }
+        if (!activeChat || !activeChat.id) {
+          toast.error("Cannot delete message: No active chat selected.");
+          return;
+        }
+
+        try {
+          await chatAPI.deleteMessage(activeChat.id, message.id);
+          toast.success("Message deleted");
+
+          setLocalMessages((prev) => prev.filter((m) => m.id !== message.id));
+        } catch (error) {
+          console.error("Error deleting message:", error);
+          toast.error(
+            error.response?.data?.message || "Failed to delete message."
+          );
         }
         break;
       case "pin":
@@ -322,6 +339,154 @@ function ChatWindow({
         return msg;
       })
     );
+  };
+
+  const startRecording = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast.error("Audio recording is not supported by your browser.");
+      return;
+    }
+
+    const mimeTypes = [
+      "audio/ogg; codecs=opus",
+      "audio/wav",
+      "audio/mp3",
+      "audio/ogg", // Try generic ogg
+      "audio/webm; codecs=opus", // Fallback to webm
+    ];
+
+    let supportedMimeType = "";
+    for (const type of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        supportedMimeType = type;
+        break;
+      }
+    }
+
+    if (!supportedMimeType) {
+      toast.error(
+        "No supported audio format found (ogg, wav, mp3). Cannot record."
+      );
+      console.warn("Supported types check failed for required types:", [
+        "audio/ogg; codecs=opus",
+        "audio/wav",
+        "audio/mp3",
+      ]);
+      console.warn("Also checked fallbacks:", [
+        "audio/ogg",
+        "audio/webm; codecs=opus",
+      ]);
+      return;
+    }
+    console.log("Using MIME type:", supportedMimeType);
+    setSelectedMimeType(supportedMimeType);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const options = { mimeType: supportedMimeType };
+      mediaRecorderRef.current = new MediaRecorder(stream, options);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = sendRecording; // Call sendRecording when stopped
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      setRecordingStartTime(Date.now());
+      setRecordingTime(0);
+
+      // Start timer interval
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime((prevTime) => prevTime + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      toast.error("Could not access microphone. Please check permissions.");
+    }
+  };
+
+  const stopRecording = (cancel = false) => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop(); // This will trigger onstop -> sendRecording
+      // Stop stream tracks
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
+
+      // Clear timer interval
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+
+      if (cancel) {
+        // If cancelling, reset state immediately without sending
+        setIsRecording(false);
+        setRecordingStartTime(null);
+        setRecordingTime(0);
+        audioChunksRef.current = [];
+        mediaRecorderRef.current = null;
+        console.log("Recording cancelled");
+      }
+      // If not cancelling, the `sendRecording` function (called by onstop) will reset state
+    }
+  };
+
+  const sendRecording = async () => {
+    // Check if there are audio chunks to send
+    if (audioChunksRef.current.length === 0) {
+      console.log("No audio data recorded, not sending.");
+      // Reset state even if nothing was recorded/sent
+      setIsRecording(false);
+      setRecordingStartTime(null);
+      setRecordingTime(0);
+      mediaRecorderRef.current = null; // Clean up recorder ref
+      return;
+    }
+
+    let fileExtension = "ogg"; // Default
+    if (selectedMimeType.includes("wav")) {
+      fileExtension = "wav";
+    } else if (selectedMimeType.includes("mp3")) {
+      fileExtension = "mp3";
+    }
+
+    // ✨ Create Blob with the correct MIME type
+    const audioBlob = new Blob(audioChunksRef.current, {
+      type: selectedMimeType,
+    });
+    const fileName = `voicenote_${Date.now()}.${fileExtension}`;
+    const formData = new FormData();
+    formData.append("voice_note", audioBlob, fileName);
+
+    setIsUploading(true); // Use isUploading state to show loading
+    setIsRecording(false); // Recording has stopped
+    setRecordingStartTime(null);
+    setRecordingTime(0);
+    audioChunksRef.current = [];
+    mediaRecorderRef.current = null; // Clean up recorder ref
+
+    try {
+      await chatAPI.sendVoiceNote(activeChat.id, formData);
+      toast.success("Voice note sent!");
+      // Message should appear via Pusher
+    } catch (error) {
+      console.error("Error sending voice note:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to send voice note."
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Format recording time (MM:SS)
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   if (!activeChat) {
@@ -520,78 +685,116 @@ function ChatWindow({
       ) : (
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center space-x-2">
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-400 hover:text-gray-600"
-                type="button"
-                aria-label="Add emoji"
-                onClick={() => setShowEmojiPicker((v) => !v)}
-              >
-                <img src="/smile.png" alt="Smile" className="w-5 h-5" />
-              </Button>
-              {showEmojiPicker && (
-                <div className="absolute z-50 bottom-12 left-0">
-                  <Picker
-                    data={data}
-                    onEmojiSelect={handleEmojiSelect}
-                    theme="light"
-                    previewPosition="none"
-                  />
+            {!isRecording ? (
+              <>
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-gray-400 hover:text-gray-600"
+                    type="button"
+                    aria-label="Add emoji"
+                    onClick={() => setShowEmojiPicker((v) => !v)}
+                  >
+                    <img src="/smile.png" alt="Smile" className="w-5 h-5" />
+                  </Button>
+                  {showEmojiPicker && (
+                    <div className="absolute z-50 bottom-12 left-0">
+                      <Picker
+                        data={data}
+                        onEmojiSelect={handleEmojiSelect}
+                        theme="light"
+                        previewPosition="none"
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <FileUploadDropdown
-              onFileSelect={handleFileSelect}
-              disabled={sending}
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <Paperclip className="w-5 h-5" />
-              </Button>
-            </FileUploadDropdown>
 
-            <div className="flex-1 relative">
-              <Input
-                ref={inputRef}
-                type="text"
-                placeholder="Type message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={handleInputKeyDown}
-                aria-label="Type your message"
-                disabled={sending || isUploading}
-                className="pr-20 bg-gray-50 border-gray-200 rounded-full"
-              />
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                <FileUploadDropdown
+                  onFileSelect={handleFileSelect}
+                  disabled={sending}
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </Button>
+                </FileUploadDropdown>
+
+                <div className="flex-1 relative">
+                  <Input
+                    ref={inputRef}
+                    type="text"
+                    placeholder="Type message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={handleInputKeyDown}
+                    aria-label="Type your message"
+                    disabled={sending || isUploading}
+                    className="pr-20 bg-gray-50 border-gray-200 rounded-full"
+                  />
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-gray-400 hover:text-gray-600 w-8 h-8"
+                      onClick={startRecording}
+                      disabled={sending || isUploading}
+                      aria-label="Record voice note"
+                    >
+                      <Mic className="w-5 h-5" />
+                    </Button>
+                    <Button
+                      variant={"ghost"}
+                      onClick={handleSendMessage}
+                      size="icon"
+                      className="bg-inherit"
+                      disabled={!message.trim() || sending || isUploading}
+                      aria-label="Send message"
+                    >
+                      {sending || isUploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              // Show recording UI if recording
+              <div className="flex-1 flex items-center justify-between bg-gray-100 rounded-full px-4 py-2">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-gray-400 hover:text-gray-600 w-8 h-8"
-                  disabled={sending || isUploading}
+                  className="text-red-500 hover:bg-red-100 w-8 h-8"
+                  onClick={() => stopRecording(true)} // Pass true to cancel
+                  aria-label="Cancel recording"
                 >
-                  <Mic className="w-4 h-4" />
+                  <Trash2 className="w-5 h-5" />
                 </Button>
+                <div className="flex items-center text-sm">
+                  <Mic className="w-5 h-5 text-red-500 mr-2 animate-pulse" />{" "}
+                  {/* Pulsing mic */}
+                  <span>{formatTime(recordingTime)}</span>
+                </div>
                 <Button
-                  variant={"ghost"}
-                  onClick={handleSendMessage}
+                  variant="ghost"
                   size="icon"
-                  className="bg-inherit"
-                  disabled={!message.trim() || sending || isUploading}
-                  aria-label="Send message"
+                  className="text-green-500 hover:bg-green-100 w-8 h-8"
+                  onClick={() => stopRecording(false)} // Pass false to send
+                  aria-label="Send recording"
                 >
-                  {sending || isUploading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  {isUploading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <Send className="" />
+                    <Check className="w-5 h-5" />
                   )}
                 </Button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

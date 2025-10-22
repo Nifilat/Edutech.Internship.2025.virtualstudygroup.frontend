@@ -217,8 +217,18 @@ export const chatAPI = {
     return response.data;
   },
 
-  deleteMessage: async (messageId) => {
-    const response = await api.delete(`/messages/${messageId}`);
+  deleteMessage: async (groupId, messageId) => {
+    const response = await api.delete(`/groups/${groupId}/messages/${messageId}`);
+    return response.data;
+  },
+
+
+  sendVoiceNote: async (groupId, formData) => {
+    const response = await api.post(`/groups/${groupId}/voice-note`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };
