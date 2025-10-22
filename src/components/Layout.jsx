@@ -29,7 +29,7 @@ const Layout = ({ children, pageTitle, activeNavItem, onNavItemClick }) => {
       >
         <Header pageTitle={pageTitle} onToggleSidebar={toggleSidebar} />
 
-        <main className="p-4 md:p-8 pt-20 lg:pt-8">{children}</main>
+        <main className="p-4 md:p-8 pt-20 lg:pt-25">{children}</main>
         <Toaster />
       </div>
 
