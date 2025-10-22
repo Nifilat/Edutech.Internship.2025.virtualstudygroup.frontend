@@ -25,6 +25,7 @@ const GroupParticipantsPopup = ({
   const [currentUserRole, setCurrentUserRole] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState(null);
+  const [isUpdatingAdmin, setIsUpdatingAdmin] = useState(null);
 
   const { getUser } = useAuth();
   const user = getUser();
@@ -58,6 +59,7 @@ const GroupParticipantsPopup = ({
       setParticipants(formatted);
     } catch (err) {
       console.error("Error fetching group details:", err);
+      toast.error("Failed to fetch group participants.");
     } finally {
       setLoading(false);
     }
@@ -69,12 +71,9 @@ const GroupParticipantsPopup = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, isOpen]);
 
-  // Called by ParticipantsList after successful add (selectedParticipants passed)
   const handleParticipantsChange = async (newList) => {
-    // optimistic local update
     setParticipants(newList);
 
-    // fetch authoritative list (roles etc) from server
     try {
       await fetchGroupDetails();
     } catch (err) {
@@ -82,10 +81,8 @@ const GroupParticipantsPopup = ({
     }
   };
 
-  // onAddMember provided to ParticipantsList; called per member with selectedUser object
   const onAddMember = async (selectedUser) => {
     try {
-      // Add member via API (student_id maps to selectedUser.id)
       const resp = await studyGroupAPI.addGroupMember(groupId, selectedUser.id);
       return resp;
     } catch (error) {
@@ -94,6 +91,29 @@ const GroupParticipantsPopup = ({
         status: "error",
         message: error.response?.data?.message || "Request failed",
       };
+    }
+  };
+
+  const handleMakeAdmin = async (member) => {
+    if (!member || !groupId) return;
+    setIsUpdatingAdmin(member.id); 
+    setSelectedMember(null); 
+
+    try {
+      const response = await studyGroupAPI.toggleAdminStatus(groupId, member.id);
+      toast.success(response.message || `${member.name} role updated.`);
+
+      // Update the participant list locally
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.id === member.id ? { ...p, role: response.data.role } : p
+        )
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update role.");
+      console.error("Error making admin:", err);
+    } finally {
+      setIsUpdatingAdmin(null); 
     }
   };
 
@@ -178,7 +198,11 @@ const GroupParticipantsPopup = ({
                           </span>
                         )}
 
-                        {canManage && (
+                        {isUpdatingAdmin === participant.id && (
+                          <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                        )}
+
+                        {canManage && isUpdatingAdmin !== participant.id && (
                           <button
                             onClick={() => setSelectedMember(participant)}
                             className="p-1 rounded transition-colors"
@@ -252,10 +276,7 @@ const GroupParticipantsPopup = ({
         isOpen={!!selectedMember}
         onClose={() => setSelectedMember(null)}
         member={selectedMember}
-        onMakeAdmin={() => {
-          toast.success(`${selectedMember?.name} is now an admin`);
-          setSelectedMember(null);
-        }}
+        onMakeAdmin={() => handleMakeAdmin(selectedMember)}
         onRemoveMember={() => {
           setMemberToDelete(selectedMember);
           setShowDeleteConfirm(true);
