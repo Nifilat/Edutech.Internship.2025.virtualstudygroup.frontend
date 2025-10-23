@@ -148,8 +148,8 @@ export const studyGroupAPI = {
     return response.data;
   },
 
-  startCallSession: async (groupId) => {
-    const response = await api.post(`/study-groups/${groupId}/start-session`);
+  startCallSession: async () => {
+    const response = await api.post(`/study-groups/start-call`);
     return response.data;
   },
 
