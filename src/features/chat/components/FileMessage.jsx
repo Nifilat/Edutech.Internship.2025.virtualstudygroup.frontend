@@ -1,16 +1,144 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import { useFileDownloader } from "@/hooks/useFileDownloader";
 import { API_STORAGE_URL } from "@/lib/api";
-import { File as FileIcon, Download, PlayCircle, Loader2 } from "lucide-react";
+import {
+  File as FileIcon,
+  Download,
+  PlayCircle,
+  Loader2,
+  Play,
+  Pause,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { Progress } from "@/components/ui/progress";
+
+// Helper function to format time (MM:SS)
+const formatAudioTime = (seconds) => {
+  if (isNaN(seconds) || seconds === Infinity) {
+    return "00:00";
+  }
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`;
+};
+
+// Custom Audio Player Component (can be defined inside FileMessage or separately)
+const VoiceNotePlayer = ({ msg, fileUrl }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioRef = useRef(null);
+  const { getUser } = useAuth();
+  const currentUser = getUser();
+  const isOwn = msg.user_id === currentUser?.id;
+
+  // Handle loading metadata to get duration
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  // Handle time updates during playback
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  // Handle audio ending
+  const handleAudioEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0); // Reset time when finished
+  };
+
+  // Toggle play/pause
+  const togglePlayPause = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current
+        .play()
+        .catch((error) => console.error("Audio play failed:", error)); // Add error handling
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  // Calculate progress percentage
+  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  // Get user initials
+  const userInitials = msg.user?.first_name?.[0] || "U";
+
+  return (
+    <div
+      className={`flex items-center gap-4 px-4 py-2 w-full  rounded-lg ${
+        isOwn ? "" : ""
+      }`}
+    >
+      {!isOwn && (
+        <Avatar className="w-8 h-8 flex-shrink-0 self-start">
+          {" "}
+          {/* Align avatar top */}
+          <AvatarImage src={msg.user?.avatar_url} />
+          <AvatarFallback className="bg-orange-100 text-orange-600 text-xs">
+            {userInitials}
+          </AvatarFallback>
+        </Avatar>
+      )}
+      <audio
+        ref={audioRef}
+        src={fileUrl}
+        onLoadedMetadata={handleLoadedMetadata}
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={handleAudioEnded}
+        preload="metadata"
+        className="hidden"
+      />
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={togglePlayPause}
+        className={`w-10 h-10 rounded-full flex-shrink-0 ${
+          isOwn
+            ? "bg-orange-100 hover:bg-orange-200"
+            : "bg-gray-200 hover:bg-gray-300"
+        }`}
+        aria-label={isPlaying ? "Pause voice note" : "Play voice note"}
+      >
+        {isPlaying ? (
+          <Pause className="w-5 h-5 text-orange-normal" />
+        ) : (
+          <Play className="w-5 h-5 text-orange-normal fill-orange-normal" />
+        )}
+      </Button>
+      <div className="flex-1 flex flex-col justify-center min-w-0">
+        <Progress value={progressPercentage} className="h-1.5 w-full mb-1.5" />
+        <span className="text-[11px] text-gray-500 self-end">
+          {formatAudioTime(isPlaying ? currentTime : duration)}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 export const FileMessage = ({ msg }) => {
   const { download, isDownloading } = useFileDownloader();
+
+  if (msg.voice_note) {
+    const voiceNoteUrl = `${API_STORAGE_URL}/${msg.voice_note}`;
+    return <VoiceNotePlayer msg={msg} fileUrl={voiceNoteUrl} />;
+  }
 
   if (!msg.file) return null;
 
   const isImage = msg.file.mime_type?.startsWith("image/");
   const isVideo = msg.file.mime_type?.startsWith("video/");
+  const isAudio = msg.file.mime_type?.startsWith("audio/");
   const isPDF = msg.file.mime_type === "application/pdf";
   const fileUrl = `${API_STORAGE_URL}/${msg.file.path}`;
 
@@ -64,6 +192,17 @@ export const FileMessage = ({ msg }) => {
             {msg.message}
           </p>
         )}
+      </div>
+    );
+  }
+
+  // ✨ RENDER AUDIO (VOICE NOTE)
+  if (isAudio) {
+    return (
+      <div className="flex items-center gap-2 p-2 w-full max-w-[280px]">
+        <audio controls src={fileUrl} className="w-full h-10">
+          Your browser does not support the audio element.
+        </audio>
       </div>
     );
   }
