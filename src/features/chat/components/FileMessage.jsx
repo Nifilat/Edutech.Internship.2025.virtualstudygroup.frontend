@@ -81,16 +81,6 @@ const VoiceNotePlayer = ({ msg, fileUrl }) => {
         isOwn ? "" : ""
       }`}
     >
-      {!isOwn && (
-        <Avatar className="w-8 h-8 flex-shrink-0 self-start">
-          {" "}
-          {/* Align avatar top */}
-          <AvatarImage src={msg.user?.avatar_url} />
-          <AvatarFallback className="bg-orange-100 text-orange-600 text-xs">
-            {userInitials}
-          </AvatarFallback>
-        </Avatar>
-      )}
       <audio
         ref={audioRef}
         src={fileUrl}
