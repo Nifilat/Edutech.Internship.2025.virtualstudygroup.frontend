@@ -16,7 +16,7 @@ import { formatDateSeparator } from "@/lib/formatMessageTime";
 import GroupActionsPopup from "./GroupActionsPopup";
 import { FileMessage } from "../features/chat/components/FileMessage";
 import { ChatHeader } from "../features/chat/components/ChatHeader";
-import { JitsiCall } from "../features/call/JitsiCall";
+import { WherebyCall } from "../features/call/WherebyCall";
 import { MessageContextMenu } from "../features/chat/components/MessageContextMenu";
 import { ReplyPreview } from "../features/chat/components/ReplyPreview";
 import { Linkify } from "../utils/linkify";
@@ -35,7 +35,7 @@ const MessageReactions = ({ reactions }) => {
 };
 
 const MessageContent = ({ msg, allMessages }) => {
-  if (msg.file) {
+  if (msg.file || msg.voice_note) {
     return <FileMessage msg={msg} />;
   }
 
@@ -102,8 +102,7 @@ function ChatWindow({
 
   const [isCallActive, setIsCallActive] = useState(false);
   const [isStartingCall, setIsStartingCall] = useState(false);
-  const [callRoomName, setCallRoomName] = useState(null);
-  const [jitsiToken, setJitsiToken] = useState(null);
+  const [callUrl, setCallUrl] = useState(null);
 
   const [menuState, setMenuState] = useState({
     isOpen: false,
@@ -214,24 +213,26 @@ function ChatWindow({
   };
 
   const handleStartCall = async () => {
-    if (isStartingCall) return;
+    if (isStartingCall || !activeChat?.id) return;
     setIsStartingCall(true);
+    setCallUrl(null); // Clear previous URL if any
+
     try {
       const response = await studyGroupAPI.startCallSession(activeChat.id);
-      const meetingLink = response?.data?.join_url;
-      const token = response?.data?.jitsi_token;
+      // Assuming the user starting the call is the host
+      const hostUrl = response?.host_url; // Use host_url from response
 
-      if (meetingLink) {
-        const roomName = new URL(meetingLink).pathname.substring(1);
-        setCallRoomName(roomName);
-        setJitsiToken(token);
+      if (hostUrl) {
+        setCallUrl(hostUrl); // Set the full Whereby URL
         setIsCallActive(true);
       } else {
-        throw new Error("Meeting link was not provided by the server.");
+        throw new Error("Meeting URL (host_url) was not provided by the server.");
       }
     } catch (error) {
-      console.error("Failed to start call session:", error);
+      console.error("Failed to start Whereby call session:", error);
       toast.error(error.response?.data?.message || "Could not start the call.");
+      setIsCallActive(false); // Ensure call state is false on error
+      setCallUrl(null);
     } finally {
       setIsStartingCall(false);
     }
@@ -239,8 +240,7 @@ function ChatWindow({
 
   const handleEndCall = () => {
     setIsCallActive(false);
-    setCallRoomName(null);
-    setJitsiToken(null);
+    setCallUrl(null);
   };
 
   const handleInputKeyDown = (e) => {
@@ -819,19 +819,18 @@ function ChatWindow({
       />
 
       <Dialog open={isCallActive} onOpenChange={handleEndCall}>
-        <DialogContent className="max-w-full w-full h-full p-0 gap-0 border-0">
+        <DialogContent className="max-w-full w-full h-[80vh] md:h-[90vh] p-0 gap-0 border-0">
           {isStartingCall ? (
             <div className="flex h-full w-full items-center justify-center bg-gray-800 text-white">
               <Loader2 className="h-8 w-8 animate-spin" />
               <span className="ml-2">Starting call...</span>
             </div>
           ) : (
-            callRoomName && (
-              <JitsiCall
-                roomName={callRoomName}
-                jwt={jitsiToken}
-                userDisplayName={`${user.first_name} ${user.last_name}`}
+             callUrl && ( 
+              <WherebyCall
+                roomUrl={callUrl} 
                 onCallEnd={handleEndCall}
+                userDisplayName={`${user.first_name} ${user.last_name}`}
               />
             )
           )}
