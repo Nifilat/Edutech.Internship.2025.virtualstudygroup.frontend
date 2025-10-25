@@ -1,10 +1,17 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, act } from "react";
 import Pusher from "pusher-js";
+import { toast } from "sonner";
 
 export const usePusherChat = (groupId) => {
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [activeCallInfo, setActiveCallInfo] = useState({
+    isActive: false,
+    roomUrl: null,
+    hostUrl: null,
+    startedBy: null,
+  })
   const pusherRef = useRef(null);
   const channelRef = useRef(null);
   const currentGroupRef = useRef(null);
@@ -83,8 +90,9 @@ export const usePusherChat = (groupId) => {
 
   // Subscribe to channel
   useEffect(() => {
-    if (!groupId || !pusherRef.current) {
+    if (!groupId || !pusherRef.current || !pusherRef.current.connection) {
       console.log("⏸️ No groupId or Pusher not ready");
+      setActiveCallInfo({ isActive: false, roomUrl: null, hostUrl: null, startedBy: null });
       return;
     }
 
@@ -94,16 +102,13 @@ export const usePusherChat = (groupId) => {
       return;
     }
 
-    console.log(`\n${"=".repeat(70)}`);
-    console.log(`📡 SUBSCRIBING TO CHANNEL: group.${groupId}`);
-    console.log(`${"=".repeat(70)}\n`);
-
     // Unsubscribe from previous channel
     if (channelRef.current && currentGroupRef.current !== groupId) {
       const oldChannel = `group.${currentGroupRef.current}`;
       console.log(`👋 Unsubscribing from ${oldChannel}`);
       pusherRef.current.unsubscribe(oldChannel);
       channelRef.current = null;
+      setActiveCallInfo({ isActive: false, roomUrl: null, hostUrl: null, startedBy: null });
     }
 
     currentGroupRef.current = groupId;
@@ -182,10 +187,43 @@ export const usePusherChat = (groupId) => {
       }
     });
 
+    // ✨ Listen for meeting.started
+    channelRef.current.bind("meeting.started", (data) => {
+      console.log("📞 Call Started Event Received:", data);
+      if (data?.meeting?.roomUrl && data?.meeting?.hostRoomUrl) {
+         // Assuming guest_url is the main roomUrl for joining
+        const guestUrl = data.meeting.roomUrl;
+        const hostUrl = data.meeting.hostRoomUrl; // Get host URL
+        setActiveCallInfo({
+          isActive: true,
+          roomUrl: guestUrl, // Use guest URL for joining by default
+          hostUrl: hostUrl,   // Store host URL
+          // Optional: Extract who started it if available in 'data'
+          startedBy: data.startedBy || null,
+        });
+        toast.info("A call has started in this group!"); // Notify user
+      } else {
+          console.error("❌ Invalid meeting.started event payload:", data);
+      }
+    });
+
+    // ✨ Listen for meeting.ended
+    channelRef.current.bind("meeting.ended", (data) => {
+      console.log("📞 Call Ended Event Received:", data);
+      setActiveCallInfo({
+        isActive: false,
+        roomUrl: null,
+        hostUrl: null,
+        startedBy: null,
+      });
+      toast.info("The call in this group has ended."); // Notify user
+    });
+
     // Cleanup
     return () => {
       if (channelRef.current && pusherRef.current) {
         console.log(`🧹 Cleaning up subscription for ${channelName}`);
+        channelRef.current.unbind_all();
         pusherRef.current.unsubscribe(channelName);
         channelRef.current = null;
       }
@@ -228,6 +266,7 @@ export const usePusherChat = (groupId) => {
     messages,
     isConnected,
     isLoadingMessages,
+    activeCallInfo,
     initializeMessages,
     clearMessages,
     addMessage,
