@@ -22,6 +22,7 @@ const Chatroom = () => {
     messages: echoMessages,
     isConnected: isEchoConnected,
     isLoadingMessages,
+    activeCallInfo,
     initializeMessages,
     clearMessages,
     updateMessageStatus,
@@ -292,6 +293,7 @@ const Chatroom = () => {
             echoMessages={echoMessages}
             isEchoConnected={isEchoConnected}
             isLoadingMessages={isLoadingMessages}
+            activeCallInfo={activeCallInfo}
             onSendMessage={handleSendMessage}
             onRestrictionUpdate={handleRestrictionUpdate}
             onLeaveGroupSuccess={handleLeaveGroupSuccess}
