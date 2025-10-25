@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
-import { UserGroup, Paperclip, Mic, Send } from "./icons";
+import { UserGroup, Paperclip, Mic, Send, Phone } from "./icons";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -83,6 +83,7 @@ function ChatWindow({
   echoMessages,
   isEchoConnected,
   isLoadingMessages,
+  activeCallInfo,
   onSendMessage,
   onRestrictionUpdate,
   onLeaveGroupSuccess,
@@ -103,6 +104,7 @@ function ChatWindow({
   const [isCallActive, setIsCallActive] = useState(false);
   const [isStartingCall, setIsStartingCall] = useState(false);
   const [callUrl, setCallUrl] = useState(null);
+  const [isJoiningCall, setIsJoiningCall] = useState(false);
 
   const [menuState, setMenuState] = useState({
     isOpen: false,
@@ -212,36 +214,73 @@ function ChatWindow({
     }
   };
 
-  const handleStartCall = async () => {
-    if (isStartingCall || !activeChat?.id) return;
-    setIsStartingCall(true);
-    setCallUrl(null); // Clear previous URL if any
+  const handleCallButtonClick = async () => {
+      if (!activeChat?.id) return;
 
-    try {
-      const response = await studyGroupAPI.startCallSession(activeChat.id);
-      // Assuming the user starting the call is the host
-      const hostUrl = response?.host_url; // Use host_url from response
+      if (activeCallInfo?.isActive) {
+          // --- Join existing call ---
+          console.log("Joining existing call:", activeCallInfo.roomUrl);
+          setIsJoiningCall(true); // Show loader while setting up join
+          // Determine if current user is the host based on stored hostUrl
+          // This comparison is basic, might need adjustment if URLs differ slightly
+          const joinUrl = (activeCallInfo.hostUrl && activeCallInfo.hostUrl === activeCallInfo.roomUrl) // Check if the main URL is the host URL
+                            ? activeCallInfo.hostUrl // Use host if available and matches
+                            : activeCallInfo.roomUrl; // Otherwise use the guest/room URL
 
-      if (hostUrl) {
-        setCallUrl(hostUrl); // Set the full Whereby URL
-        setIsCallActive(true);
+           if (!joinUrl) {
+                toast.error("Could not get the URL to join the call.");
+                setIsJoiningCall(false);
+                return;
+           }
+
+          setCallUrl(joinUrl); // Set the URL from Pusher event data
+          setIsCallActive(true);
+          setIsJoiningCall(false); // Hide loader
+
       } else {
-        throw new Error("Meeting URL (host_url) was not provided by the server.");
+          // --- Start a new call ---
+          if (isStartingCall) return; // Prevent double-clicks
+          setIsStartingCall(true);
+          setCallUrl(null);
+
+          try {
+            // ✨ Pass groupId to the updated API function
+            const response = await studyGroupAPI.startCallSession(activeChat.id);
+            const hostUrl = response?.host_url; // Host starts with host_url
+
+            if (hostUrl) {
+                setCallUrl(hostUrl);
+                setIsCallActive(true);
+                // Backend should broadcast the call.started event now
+            } else {
+                throw new Error("Meeting URL (host_url) was not provided by the server.");
+            }
+          } catch (error) {
+              console.error("Failed to start Whereby call session:", error);
+              toast.error(error.response?.data?.message || "Could not start the call.");
+              setIsCallActive(false);
+              setCallUrl(null);
+          } finally {
+              setIsStartingCall(false);
+          }
       }
-    } catch (error) {
-      console.error("Failed to start Whereby call session:", error);
-      toast.error(error.response?.data?.message || "Could not start the call.");
-      setIsCallActive(false); // Ensure call state is false on error
-      setCallUrl(null);
-    } finally {
-      setIsStartingCall(false);
-    }
   };
 
-  const handleEndCall = () => {
-    setIsCallActive(false);
-    setCallUrl(null);
-  };
+
+    // ✨ handleEndCall now also resets joining state
+    const handleEndCall = () => {
+        setIsCallActive(false);
+        setCallUrl(null);
+        setIsJoiningCall(false); 
+    };
+
+    // ✨ Effect to automatically close call dialog if Pusher says call ended
+    useEffect(() => {
+        if (!activeCallInfo?.isActive && isCallActive) {
+            console.log("Call ended via Pusher, closing dialog.");
+            handleEndCall(); // Close the local dialog
+        }
+    }, [activeCallInfo?.isActive, isCallActive]); // Depend on both states
 
   const handleInputKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -523,11 +562,36 @@ function ChatWindow({
         activeChat={activeChat}
         isEchoConnected={isEchoConnected}
         participantsCount={participantsCount}
+        isCallActive={activeCallInfo?.isActive} // ✨ Pass call status to header
+        isLoadingCallAction={isStartingCall || isJoiningCall}
         onShowParticipants={() => setShowParticipantsPopup(true)}
         onToggleSearch={() => setIsSearching((prev) => !prev)}
         onShowActions={() => setShowActionsPopup(true)}
-        onStartCall={handleStartCall}
+        onCallButtonClick={handleCallButtonClick}
       />
+
+      {/* ✨ Call in Progress Banner */}
+      {activeCallInfo?.isActive && !isCallActive && ( // Show banner only if call is active but user hasn't joined
+          <div className="bg-green-100 border-b border-green-200 px-4 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                 <Phone className="w-4 h-4 text-green-700 animate-pulse" />
+                 <span className="text-sm font-medium text-green-800">
+                    Call in progress...
+                    {/* Optional: Add who started it */}
+                    {/* {activeCallInfo.startedBy && ` (started by ${activeCallInfo.startedBy})`} */}
+                 </span>
+              </div>
+              <Button
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs"
+                onClick={handleCallButtonClick} // Button now acts as "Join"
+                disabled={isJoiningCall}
+              >
+                {isJoiningCall ? <Loader2 className="w-4 h-4 mr-1 animate-spin"/> : null}
+                Join Call
+              </Button>
+          </div>
+      )}
 
       {isSearching && (
         <div className="p-4 border-b border-gray-200 flex items-center">
@@ -820,10 +884,10 @@ function ChatWindow({
 
       <Dialog open={isCallActive} onOpenChange={handleEndCall}>
         <DialogContent className="max-w-full w-full h-[80vh] md:h-[90vh] p-0 gap-0 border-0">
-          {isStartingCall ? (
+          {isStartingCall || isJoiningCall ? (
             <div className="flex h-full w-full items-center justify-center bg-gray-800 text-white">
               <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Starting call...</span>
+              <span className="ml-2">{isStartingCall ? 'Starting call...' : 'Joining call...'}</span>
             </div>
           ) : (
              callUrl && ( 
