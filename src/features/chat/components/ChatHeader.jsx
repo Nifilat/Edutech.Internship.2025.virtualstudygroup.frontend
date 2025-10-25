@@ -9,6 +9,8 @@ import {
   Search,
   MoreHorizontal,
 } from "@/components/icons";
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const renderChatAvatar = (activeChat) => {
   if (activeChat.isGroup) {
@@ -36,10 +38,12 @@ export const ChatHeader = ({
   activeChat,
   isEchoConnected,
   participantsCount,
+  isCallActive,
+  isLoadingCallAction,
   onShowParticipants,
   onToggleSearch,
   onShowActions,
-  onStartCall,
+  onCallButtonClick,
 }) => {
   return (
     <div className="p-4 border-b border-gray-200 flex items-center justify-between">
@@ -80,18 +84,38 @@ export const ChatHeader = ({
         <Button
           variant="ghost"
           size="icon"
-          className="text-orange-normal hover:text-orange-dark"
-          onClick={onStartCall}
+          className={cn(
+            "text-orange-normal hover:text-orange-dark",
+            isCallActive && "text-green-600 hover:text-green-700 animate-pulse" // Green pulse if call active
+          )}
+          onClick={onCallButtonClick} // Use the combined handler
+          disabled={isLoadingCallAction} // Disable while starting/joining
+          aria-label={isCallActive ? "Join ongoing call" : "Start audio call"}
+          title={isCallActive ? "Join ongoing call" : "Start audio call"} // Tooltip
         >
-          <Phone className="w-5 h-5"  />
+          {isLoadingCallAction ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Phone className="w-5 h-5" />
+          )}
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="text-orange-normal hover:text-orange-dark"
-          onClick={onStartCall}
+          className={cn(
+            "text-orange-normal hover:text-orange-dark",
+            isCallActive && "text-green-600 hover:text-green-700 animate-pulse"
+          )}
+          onClick={onCallButtonClick} // Use the combined handler
+          disabled={isLoadingCallAction}
+          aria-label={isCallActive ? "Join ongoing call" : "Start video call"}
+          title={isCallActive ? "Join ongoing call" : "Start video call"}
         >
-          <Video className="w-5 h-5" />
+          {isLoadingCallAction ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Video className="w-5 h-5" />
+          )}
         </Button>
         <Button
           variant="ghost"
