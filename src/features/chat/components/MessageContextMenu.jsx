@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import {
@@ -36,6 +36,7 @@ export const MessageContextMenu = ({
   onReact,
 }) => {
   const menuRef = useRef(null);
+  const [coords, setCoords] = useState({ x: position.x, y: position.y });
 
   // Close the menu if the user clicks outside of it
   useEffect(() => {
@@ -48,11 +49,41 @@ export const MessageContextMenu = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
+  // Reposition to keep the menu within viewport bounds
+  useEffect(() => {
+    const adjustPosition = () => {
+      const menuEl = menuRef.current;
+      if (!menuEl) return;
+      const rect = menuEl.getBoundingClientRect();
+      const margin = 8;
+      let x = position.x;
+      let y = position.y;
+
+      if (x + rect.width > window.innerWidth - margin) {
+        x = Math.max(margin, window.innerWidth - rect.width - margin);
+      }
+      if (y + rect.height > window.innerHeight - margin) {
+        y = Math.max(margin, window.innerHeight - rect.height - margin);
+      }
+      if (x !== coords.x || y !== coords.y) {
+        setCoords({ x, y });
+      }
+    };
+    // Run after mount and on resize/scroll
+    adjustPosition();
+    window.addEventListener("resize", adjustPosition);
+    window.addEventListener("scroll", adjustPosition, true);
+    return () => {
+      window.removeEventListener("resize", adjustPosition);
+      window.removeEventListener("scroll", adjustPosition, true);
+    };
+  }, [position.x, position.y, coords.x, coords.y]);
+
   return (
     <div
       ref={menuRef}
       className="absolute z-50 w-56 bg-white rounded-lg shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95"
-      style={{ top: position.y, left: position.x }}
+      style={{ top: coords.y, left: coords.x }}
     >
       <ul className="p-2">
         {menuItems.map((item, index) => {
