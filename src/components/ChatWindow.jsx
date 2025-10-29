@@ -125,6 +125,12 @@ function ChatWindow({
 
   const [deletedIds, setDeletedIds] = useState(new Set());
 
+  // Reset local state when switching groups
+  useEffect(() => {
+    setLocalMessages([]);
+    setDeletedIds(new Set());
+  }, [activeChat?.id]);
+
   useEffect(() => {
     // Merge incoming messages with local state to preserve optimistic attachments
     setLocalMessages((prev) => {
@@ -132,6 +138,11 @@ function ChatWindow({
         ...msg,
         reactions: msg.reactions || [],
       })).filter((m) => !deletedIds.has(m.id));
+
+      // If server sent no messages, return empty (new group with no chats)
+      if (incoming.length === 0) {
+        return [];
+      }
 
       // Map by id for quick lookup
       const incomingById = new Map(incoming.map((m) => [m.id, m]));
@@ -149,9 +160,11 @@ function ChatWindow({
         };
       });
 
-      // Include any prev messages not in incoming (e.g., optimistics) unless deleted
+      // Append only optimistic messages for this chat (ids starting with temp-)
       prev.forEach((p) => {
-        if (!incomingById.has(p.id) && !deletedIds.has(p.id)) {
+        const isTemp = typeof p.id === "string" && p.id.startsWith("temp-");
+        const sameChat = String(p.group_id) === String(activeChat?.id);
+        if (isTemp && sameChat && !incomingById.has(p.id) && !deletedIds.has(p.id)) {
           merged.push(p);
         }
       });
