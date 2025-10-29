@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Helper function to format time (MM:SS)
 const formatAudioTime = (seconds) => {
@@ -77,8 +76,8 @@ const VoiceNotePlayer = ({ msg, fileUrl }) => {
 
   return (
     <div
-      className={`flex items-center gap-4 px-4 py-2 w-full  rounded-lg ${
-        isOwn ? "" : ""
+      className={`flex items-center gap-3 px-3 py-2 w-full rounded-lg ${
+        isOwn ? "bg-orange-light" : "bg-gray-100"
       }`}
     >
       <audio
@@ -95,9 +94,7 @@ const VoiceNotePlayer = ({ msg, fileUrl }) => {
         size="icon"
         onClick={togglePlayPause}
         className={`w-10 h-10 rounded-full flex-shrink-0 ${
-          isOwn
-            ? "bg-orange-100 hover:bg-orange-200"
-            : "bg-gray-200 hover:bg-gray-300"
+          isOwn ? "bg-orange-100 hover:bg-orange-200" : "bg-white hover:bg-gray-200"
         }`}
         aria-label={isPlaying ? "Pause voice note" : "Play voice note"}
       >
@@ -107,11 +104,32 @@ const VoiceNotePlayer = ({ msg, fileUrl }) => {
           <Play className="w-5 h-5 text-orange-normal fill-orange-normal" />
         )}
       </Button>
-      <div className="flex-1 flex flex-col justify-center min-w-0">
-        <Progress value={progressPercentage} className="h-1.5 w-full mb-1.5" />
-        <span className="text-[11px] text-gray-500 self-end">
-          {formatAudioTime(isPlaying ? currentTime : duration)}
-        </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-end gap-1 h-[14px]">
+            {isPlaying ? (
+              <div className="audio-eq" aria-hidden>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            ) : (
+              <div className="flex gap-1 h-[14px] items-end">
+                <span className="w-[3px] h-[6px] bg-orange-normal rounded-sm"></span>
+                <span className="w-[3px] h-[10px] bg-orange-normal rounded-sm"></span>
+                <span className="w-[3px] h-[8px] bg-orange-normal rounded-sm"></span>
+                <span className="w-[3px] h-[12px] bg-orange-normal rounded-sm"></span>
+                <span className="w-[3px] h-[7px] bg-orange-normal rounded-sm"></span>
+              </div>
+            )}
+          </div>
+          <span className="text-[11px] text-gray-500 ml-2">
+            {formatAudioTime(isPlaying ? currentTime : duration)}
+          </span>
+        </div>
+        <Progress value={progressPercentage} className="h-1.5 w-full" />
       </div>
     </div>
   );
@@ -131,7 +149,17 @@ export const FileMessage = ({ msg }) => {
   const isVideo = msg.file.mime_type?.startsWith("video/");
   const isAudio = msg.file.mime_type?.startsWith("audio/");
   const isPDF = msg.file.mime_type === "application/pdf";
-  const fileUrl = `${API_STORAGE_URL}/${msg.file.path}`;
+  // If path is an absolute URL (blob:, http:, https:), use as-is; otherwise prefix storage URL
+  const filePath = msg.file.path || "";
+  const isAbsoluteUrl =
+    typeof filePath === "string" &&
+    (filePath.startsWith("blob:") ||
+      filePath.startsWith("http://") ||
+      filePath.startsWith("https://") ||
+      filePath.startsWith("data:"));
+  const fileUrl = isAbsoluteUrl
+    ? filePath
+    : `${API_STORAGE_URL}/${filePath}`;
 
   const handleDownloadClick = (e) => {
     e.stopPropagation(); // Prevent triggering other click events
