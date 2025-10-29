@@ -139,7 +139,14 @@ export const FileMessage = ({ msg }) => {
   const { download, isDownloading } = useFileDownloader();
 
   if (msg.voice_note) {
-    const voiceNoteUrl = `${API_STORAGE_URL}/${msg.voice_note}`;
+    const vnPath = msg.voice_note || "";
+    const isAbsolute =
+      typeof vnPath === "string" &&
+      (vnPath.startsWith("blob:") ||
+        vnPath.startsWith("http://") ||
+        vnPath.startsWith("https://") ||
+        vnPath.startsWith("data:"));
+    const voiceNoteUrl = isAbsolute ? vnPath : `${API_STORAGE_URL}/${vnPath}`;
     return <VoiceNotePlayer msg={msg} fileUrl={voiceNoteUrl} />;
   }
 

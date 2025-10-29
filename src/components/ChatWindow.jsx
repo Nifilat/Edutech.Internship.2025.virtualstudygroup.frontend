@@ -123,21 +123,25 @@ function ChatWindow({
 
   const [selectedMimeType, setSelectedMimeType] = useState("");
 
+  const [deletedIds, setDeletedIds] = useState(new Set());
+
   useEffect(() => {
     // Merge incoming messages with local state to preserve optimistic attachments
     setLocalMessages((prev) => {
       const incoming = (echoMessages || []).map((msg) => ({
         ...msg,
         reactions: msg.reactions || [],
-      }));
+      })).filter((m) => !deletedIds.has(m.id));
 
+      // Map by id for quick lookup
+      const incomingById = new Map(incoming.map((m) => [m.id, m]));
+
+      // Start with incoming, merging data from prev where needed
       const merged = incoming.map((inc) => {
         const existing = prev.find((p) => p.id === inc.id);
         if (!existing) return inc;
-
         return {
           ...inc,
-          // Preserve attachments if realtime event lacks them
           file: inc.file || existing.file || null,
           voice_note: inc.voice_note || existing.voice_note || null,
           user: inc.user || existing.user || null,
@@ -145,9 +149,16 @@ function ChatWindow({
         };
       });
 
+      // Include any prev messages not in incoming (e.g., optimistics) unless deleted
+      prev.forEach((p) => {
+        if (!incomingById.has(p.id) && !deletedIds.has(p.id)) {
+          merged.push(p);
+        }
+      });
+
       return merged;
     });
-  }, [echoMessages]);
+  }, [echoMessages, deletedIds]);
 
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -399,8 +410,8 @@ function ChatWindow({
         try {
           await chatAPI.deleteMessage(activeChat.id, message.id);
           toast.success("Message deleted");
-
           setLocalMessages((prev) => prev.filter((m) => m.id !== message.id));
+          setDeletedIds((prev) => new Set(prev).add(message.id));
         } catch (error) {
           console.error("Error deleting message:", error);
           toast.error(
@@ -569,20 +580,58 @@ function ChatWindow({
     setIsRecording(false); // Recording has stopped
     setRecordingStartTime(null);
     setRecordingTime(0);
+
+    // Optimistic local message for immediate preview
+    const objectUrl = URL.createObjectURL(audioBlob);
+    const tempId = `temp-voice-${Date.now()}`;
+    const optimisticMessage = {
+      id: tempId,
+      group_id: activeChat.id,
+      user_id: user?.id,
+      message: "",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      user: {
+        id: user?.id,
+        first_name: user?.first_name,
+        last_name: user?.last_name,
+        avatar_url: user?.avatar_url,
+      },
+      voice_note: objectUrl, // absolute blob URL for preview
+      status: "uploading",
+    };
+    setLocalMessages((prev) => [...prev, optimisticMessage]);
+
     audioChunksRef.current = [];
     mediaRecorderRef.current = null; // Clean up recorder ref
 
     try {
-      await chatAPI.sendVoiceNote(activeChat.id, formData);
+      const res = await chatAPI.sendVoiceNote(activeChat.id, formData);
+      const serverMessage = res?.chat || res?.data; // API returns { data: {...} }
+      if (serverMessage && serverMessage.id) {
+        // Replace optimistic with server message, preserving local voice_note if missing
+        setLocalMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempId
+              ? {
+                  ...serverMessage,
+                  voice_note: serverMessage.voice_note || m.voice_note || "",
+                }
+              : m
+          )
+        );
+      }
       toast.success("Voice note sent!");
-      // Message should appear via Pusher
     } catch (error) {
       console.error("Error sending voice note:", error);
       toast.error(
         error.response?.data?.message || "Failed to send voice note."
       );
+      // Remove optimistic message on failure
+      setLocalMessages((prev) => prev.filter((m) => m.id !== tempId));
     } finally {
       setIsUploading(false);
+      try { URL.revokeObjectURL(objectUrl); } catch (_) {}
     }
   };
 
