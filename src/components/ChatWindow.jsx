@@ -124,13 +124,29 @@ function ChatWindow({
   const [selectedMimeType, setSelectedMimeType] = useState("");
 
   useEffect(() => {
-    // Initialize or update local messages when the prop changes
-    setLocalMessages(
-      (echoMessages || []).map((msg) => ({
+    // Merge incoming messages with local state to preserve optimistic attachments
+    setLocalMessages((prev) => {
+      const incoming = (echoMessages || []).map((msg) => ({
         ...msg,
         reactions: msg.reactions || [],
-      }))
-    );
+      }));
+
+      const merged = incoming.map((inc) => {
+        const existing = prev.find((p) => p.id === inc.id);
+        if (!existing) return inc;
+
+        return {
+          ...inc,
+          // Preserve attachments if realtime event lacks them
+          file: inc.file || existing.file || null,
+          voice_note: inc.voice_note || existing.voice_note || null,
+          user: inc.user || existing.user || null,
+          status: inc.status || existing.status || undefined,
+        };
+      });
+
+      return merged;
+    });
   }, [echoMessages]);
 
   const inputRef = useRef(null);
@@ -196,21 +212,72 @@ function ChatWindow({
     if (!files || files.length === 0) return;
     const file = files[0];
 
+    // Enforce 10.2MB max file size
+    const MAX_BYTES = Math.floor(10 * 1024 * 1024); // ~10 MiB
+    if (file.size > MAX_BYTES) {
+      toast.error("File too large. Max size is 10MB.");
+      return;
+    }
+
     setIsUploading(true);
+    // Create local preview and optimistic message
+    const objectUrl = URL.createObjectURL(file);
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage = {
+      id: tempId,
+      group_id: activeChat.id,
+      user_id: user?.id,
+      message: file.name,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      user: {
+        id: user?.id,
+        first_name: user?.first_name,
+        last_name: user?.last_name,
+        avatar_url: user?.avatar_url,
+      },
+      file: {
+        id: null,
+        user_id: user?.id,
+        original_name: file.name,
+        path: objectUrl, // blob URL for immediate preview
+        mime_type: file.type,
+        size: file.size,
+        created_at: null,
+        updated_at: null,
+      },
+      status: "uploading",
+    };
+    setLocalMessages((prev) => [...prev, optimisticMessage]);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("group_id", activeChat.id);
     formData.append("message", file.name);
 
     try {
-      await chatAPI.uploadFile(formData);
+      const res = await chatAPI.uploadFile(formData);
+      const serverMessage = res?.chat;
+      if (serverMessage && serverMessage.id) {
+        // Replace optimistic with server message without waiting for realtime update
+        setLocalMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? serverMessage : m))
+        );
+      }
       toast.success("File uploaded successfully");
     } catch (error) {
       console.error("Error uploading file:", error);
-      toast.error(error.response?.data?.message || "Failed to upload file.");
-      toast.error("Failed to upload file");
+      if (error?.response?.status === 413) {
+        toast.error("File too large. Max size is 10.2MB.");
+      } else {
+        toast.error(error.response?.data?.message || "Failed to upload file.");
+      }
+      // Remove optimistic message on failure
+      setLocalMessages((prev) => prev.filter((m) => m.id !== tempId));
     } finally {
       setIsUploading(false);
+      try {
+        URL.revokeObjectURL(objectUrl);
+      } catch (_) { }
     }
   };
 
@@ -222,8 +289,8 @@ function ChatWindow({
       setIsJoiningCall(true);
       const joinUrl =
         user?.id &&
-        activeCallInfo.startedBy &&
-        String(user.id) === String(activeCallInfo.startedBy.id)
+          activeCallInfo.startedBy &&
+          String(user.id) === String(activeCallInfo.startedBy.id)
           ? activeCallInfo.hostUrl // Use host if current user started the call
           : activeCallInfo.roomUrl; // Otherwise use the guest URL
 
@@ -244,7 +311,7 @@ function ChatWindow({
 
       try {
         const response = await studyGroupAPI.startCallSession(activeChat.id);
-        const hostUrl = response?.host_url; 
+        const hostUrl = response?.host_url;
 
         if (hostUrl) {
           setCallUrl(hostUrl);
@@ -677,9 +744,8 @@ function ChatWindow({
                     </div>
                   )}
                   <div
-                    className={`group flex items-start gap-2 ${
-                      isOwn ? "justify-end" : "justify-start"
-                    }`}
+                    className={`group flex items-start gap-2 ${isOwn ? "justify-end" : "justify-start"
+                      }`}
                   >
                     {!isOwn && (
                       <Avatar className="w-8 h-8 mt-1 flex-shrink-0">
@@ -690,17 +756,15 @@ function ChatWindow({
                       </Avatar>
                     )}
                     <div
-                      className={`flex items-center gap-2 ${
-                        isOwn ? "flex-row-reverse" : "flex-row"
-                      }`}
+                      className={`flex items-center gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"
+                        }`}
                     >
                       <div className="relative">
                         <div
-                          className={`shadow-sm rounded-lg ${
-                            isOwn
+                          className={`shadow-sm rounded-lg ${isOwn
                               ? "bg-orange-light text-black-normal rounded-br-none"
                               : "bg-white text-black-normal rounded-bl-none"
-                          }`}
+                            }`}
                         >
                           {!isOwn && (
                             <p className="text-xs text-orange-normal mb-1 font-medium px-4 pt-2">
